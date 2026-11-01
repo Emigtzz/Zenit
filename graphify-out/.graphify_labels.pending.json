@@ -6,8 +6,9 @@
   "4": "impresoraService.js",
   "5": "Zenit POS — Luna de precios",
   "6": "catalogo.js",
-  "7": "busqueda.test.js",
+  "7": "api.test.js",
   "8": "productoRepository.js",
   "9": "categoriaRepository.js",
-  "10": "ventaRepository.js"
+  "10": "ventaService.js",
+  "11": "inventario.js"
 }

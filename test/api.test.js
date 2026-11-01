@@ -111,3 +111,27 @@ test('búsqueda por HTTP y errores JSON limpios', async () => {
     assert.equal(r.json.error.codigo, 'RUTA_NO_ENCONTRADA');
   } finally { s.cerrar(); }
 });
+
+test('inventario: ajuste por HTTP, kárdex y validaciones', async () => {
+  const s = await levantar();
+  try {
+    const ok = await s.pedir('POST', '/inventario/ajustes', { producto_id: 1, modo: 'entrada', cantidad: 5, motivo: 'error_captura', nota: ' faltaban ' });
+    assert.equal(ok.status, 201);
+    assert.equal(ok.json.stock_nuevo, 15);
+    assert.equal(stockDe(s.db, 1), 15);
+
+    const k = await s.pedir('GET', '/inventario/kardex?producto_id=1&tipo=ajuste');
+    assert.equal(k.status, 200);
+    assert.equal(k.json.filas[0].nota, 'faltaban');
+    assert.equal(k.json.filas[0].motivo, 'error_captura');
+
+    assert.equal((await s.pedir('POST', '/inventario/ajustes', { producto_id: 1, modo: 'entrada', cantidad: 0, motivo: 'merma' })).status, 400);
+    assert.equal((await s.pedir('POST', '/inventario/ajustes', { producto_id: 1, modo: 'entrada', cantidad: 1.5, motivo: 'merma' })).status, 400);
+    assert.equal((await s.pedir('POST', '/inventario/ajustes', { producto_id: 1, modo: 'entrada', cantidad: 1, motivo: 'inventado' })).status, 400);
+    assert.equal((await s.pedir('POST', '/inventario/ajustes', { producto_id: 1, modo: 'entrada', cantidad: 1, motivo: 'otro' })).json.error.codigo, 'NOTA_REQUERIDA');
+    assert.equal((await s.pedir('GET', '/inventario/kardex?desde=ayer')).status, 400);
+    assert.equal((await s.pedir('GET', '/inventario/motivos')).json.length, 8);
+    // el helper mete stock sin kárdex, así que el verificador debe avisar
+    assert.equal((await s.pedir('GET', '/inventario/verificar')).json.consistente, false);
+  } finally { s.cerrar(); }
+});

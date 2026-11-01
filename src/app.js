@@ -7,6 +7,8 @@ const busquedaService = require('./services/busquedaService');
 const impresoraService = require('./services/impresoraService');
 const productoRepository = require('./repositories/productoRepository');
 const catalogoController = require('./controllers/catalogoController');
+const inventarioService = require('./services/inventarioService');
+const inventarioController = require('./controllers/inventarioController');
 const ventaController = require('./controllers/ventaController');
 const rutas = require('./routes');
 const { noEncontrada, manejarErrores } = require('./middlewares/errores');
@@ -24,6 +26,7 @@ function crearApp({ db, config, impresora }) {
   app.use('/api', rutas({
     catalogoCtrl: catalogoController(catalogo, busqueda),
     ventaCtrl: ventaController(ventas, imp, config),
+    inventarioCtrl: inventarioController(inventarioService(db), busqueda),
   }));
   app.use('/api', noEncontrada);
   app.use(express.static(path.join(config.raiz, 'public')));

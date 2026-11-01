@@ -35,3 +35,13 @@ Navegador (public/)  →  routes  →  controllers  →  services  →  reposito
 2. `F4` → modal de cobro → `POST /api/ventas`.
 3. `ventaService.crear`: valida productos activos → copia precios → calcula totales → resuelve pagos y cambio → escribe todo en una transacción.
 4. Respuesta `201` con la venta; el ticket se imprime en segundo plano y la pantalla consulta su estado.
+
+## Fase 2 — Inventario (kárdex y ajustes)
+
+- **Migración 002**: `motivo` y `nota` en `movimientos_inventario` (+ índices por fecha y tipo).
+- **Saldo del kárdex = suma acumulada por producto** (`SUM() OVER (PARTITION BY producto ORDER BY id)`), calculada antes de filtrar para que no dependa del filtro. No se guarda: no puede desincronizarse.
+- **Ajuste en una transacción**: leer stock → insertar movimiento → actualizar stock. Un fallo deshace ambos.
+- **Conteo físico**: el usuario captura lo contado y el servidor calcula la diferencia con el stock del momento de la transacción.
+- **Motivos**: catálogo cerrado (`inventarioService.MOTIVOS`) para poder reportar mermas después; "otro" exige nota.
+- **Verificación** (`/inventario/verificar`): detecta productos cuyo `stock` ≠ suma de sus movimientos.
+- **Pendiente con usuarios**: `usuario_id` ya se guarda (NULL hoy); los ajustes pasarán a requerir rol *dueño*.

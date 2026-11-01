@@ -2,7 +2,7 @@
 
 Punto de venta e inventario **local primero**: la caja cobra sin internet. Servidor Node.js + Express, base SQLite local y pantalla de venta en el navegador (`localhost`).
 
-> **Estado: Fase 1 (venta básica).** Usuarios, corte de caja, compras, estadísticas y sincronización con la nube llegan en fases posteriores (ver [Roadmap](#roadmap)).
+> **Estado: Fase 1 completa y Fase 2 en curso (kárdex y ajustes listos).** Stock bajo, corte de caja, usuarios y compras manuales siguen en la fase 2; estadísticas y nube llegan después (ver [Roadmap](#roadmap)).
 
 ## Requisitos
 
@@ -43,7 +43,24 @@ Abre <http://localhost:3000>. Para el modo kiosco en la caja:
 "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk http://localhost:3000
 ```
 
-Pantalla de catálogo (alta, edición y desactivación): <http://localhost:3000/catalogo.html>.
+Otras pantallas:
+
+- Catálogo (alta, edición y desactivación): <http://localhost:3000/catalogo.html>
+- Inventario (ajustes y kárdex): <http://localhost:3000/inventario.html>
+
+## Inventario: kárdex y ajustes
+
+El stock **nunca se edita directamente**: cada cambio es un movimiento del kárdex (`venta`, `ajuste`; `compra` y `cancelacion` llegan después) y el stock se actualiza en la misma transacción. Los movimientos llevan signo (venta = negativo).
+
+Ajustes (`/inventario.html`, pestaña *Ajustar existencias*):
+
+| Tipo | Qué hace |
+|---|---|
+| Entrada | Suma piezas |
+| Salida | Resta piezas (no permite dejar el stock bajo cero) |
+| Conteo físico | Escribes lo que **contaste** y el sistema calcula la diferencia. Es la forma de corregir un stock negativo |
+
+Todo ajuste exige un **motivo** (conteo físico, merma, caducado, dañado, robo o extravío, devolución a proveedor, error de captura, otro). Con "Otro" la nota es obligatoria. El kárdex muestra el **saldo acumulado** tras cada movimiento y se filtra por producto, tipo y fechas. La pantalla avisa si el stock de algún producto no coincide con la suma de su kárdex (`GET /api/inventario/verificar`).
 
 ## Probar sin hardware
 
@@ -109,6 +126,9 @@ Todos los montos son **enteros en centavos**. El servidor recalcula precios, des
 | `GET/POST /api/categorias`, `PUT/DELETE /api/categorias/:id` | Categorías |
 | `POST /api/ventas` | `{items:[{producto_id,cantidad}], pagos:[{metodo,monto}], mayoreo}` → venta guardada en una transacción |
 | `GET /api/ventas/:id`, `GET /api/ventas/:id/impresion`, `POST /api/ventas/:id/reimprimir` | Consulta y reimpresión |
+| `POST /api/inventario/ajustes` | `{producto_id, modo: entrada\|salida\|conteo, cantidad, motivo, nota}` |
+| `GET /api/inventario/kardex?producto_id=&tipo=&desde=&hasta=&pagina=` | Movimientos con saldo acumulado (fechas `AAAA-MM-DD`, hora local) |
+| `GET /api/inventario/motivos`, `GET /api/inventario/verificar` | Catálogo de motivos y chequeo de consistencia |
 
 ## Estructura
 
@@ -123,7 +143,7 @@ Detalle y decisiones en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
 ## Roadmap
 
 1. ✅ Venta básica (este README)
-2. Inventario y control: kárdex, stock bajo, ajustes, corte de caja, usuarios y permisos, compras manuales
+2. Inventario y control: ✅ kárdex y ajustes · ⏳ stock bajo, corte de caja, usuarios y permisos, compras manuales
 3. Importación de facturas (XML CFDI)
 4. Estadísticas, sincronización a Supabase y PWA del dueño
 5. Puesta en marcha: catálogo real, etiquetas, respaldos y capacitación

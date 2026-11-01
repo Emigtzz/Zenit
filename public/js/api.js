@@ -27,6 +27,11 @@ export const api = {
   crearVenta: (venta) => pedir('POST', '/ventas', venta),
   estadoImpresion: (id) => pedir('GET', `/ventas/${id}/impresion`),
   reimprimir: (id) => pedir('POST', `/ventas/${id}/reimprimir`),
+  producto: (id) => pedir('GET', `/productos/${id}`),
+  motivos: () => pedir('GET', '/inventario/motivos'),
+  kardex: (params) => pedir('GET', '/inventario/kardex?' + new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v != null))),
+  ajustar: (a) => pedir('POST', '/inventario/ajustes', a),
+  verificarInventario: () => pedir('GET', '/inventario/verificar'),
   // catálogo (pantalla de administración)
   categorias: () => pedir('GET', '/categorias'),
   crearCategoria: (c) => pedir('POST', '/categorias', c),

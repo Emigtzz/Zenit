@@ -53,10 +53,28 @@ const ventaSchema = z.object({
   mayoreo: z.boolean().default(false),
 });
 
+const { ID_MOTIVOS } = require('../services/inventarioService');
+const fechaDia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato AAAA-MM-DD');
+const ajusteSchema = z.object({
+  producto_id: z.number().int().positive(),
+  modo: z.enum(['entrada', 'salida', 'conteo']),
+  cantidad: z.number({ error: 'Debe ser un número' }).int('Solo piezas enteras').min(0).max(1_000_000),
+  motivo: z.enum(ID_MOTIVOS, { error: 'Motivo no válido' }),
+  nota: z.preprocess((v) => (typeof v === 'string' ? v.trim() || null : v), z.string().max(300).nullable().optional().default(null)),
+}).refine((a) => a.modo === 'conteo' || a.cantidad > 0, { message: 'La cantidad debe ser mayor a 0', path: ['cantidad'] });
+const kardexSchema = z.object({
+  producto_id: z.coerce.number().int().positive().optional(),
+  tipo: z.enum(['venta', 'compra', 'ajuste', 'cancelacion']).optional(),
+  desde: fechaDia.optional(),
+  hasta: fechaDia.optional(),
+  pagina: z.coerce.number().int().min(1).default(1),
+  por_pagina: z.coerce.number().int().min(1).max(200).default(50),
+});
+
 const buscarSchema = z.object({ q: z.string().max(100).default('') });
 const listaProductosSchema = z.object({
   incluir_inactivos: z.enum(['0', '1']).default('0'),
   categoria: z.coerce.number().int().positive().optional(),
 });
 
-module.exports = { validar, categoriaSchema, productoSchema, ventaSchema, buscarSchema, listaProductosSchema };
+module.exports = { validar, categoriaSchema, productoSchema, ventaSchema, buscarSchema, listaProductosSchema, ajusteSchema, kardexSchema };

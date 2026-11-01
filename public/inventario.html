@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventario · Zenit POS</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { overflow: auto; }
+    .pagina { max-width: 1100px; margin: 0 auto; padding: 16px; width: 100%; }
+    .tabs { display: flex; gap: 8px; margin: 12px 0; }
+    .tarjeta { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+    .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px 14px; align-items: end; }
+    .rejilla label, .campo-l { font-size: 13px; color: var(--suave); display: block; margin-bottom: 3px; }
+    .rejilla input, .rejilla select, .rejilla textarea, .pick input { width: 100%; font-size: 16px; padding: 8px 10px; border: 2px solid var(--borde); border-radius: 8px; background: var(--fondo); color: var(--texto); font-family: inherit; }
+    .ancho { grid-column: 1 / -1; }
+    .pick { position: relative; }
+    .pick ul { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin: 2px 0 0; padding: 4px; list-style: none; background: var(--panel); border: 1px solid var(--borde); border-radius: 8px; max-height: 260px; overflow: auto; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+    .pick li { padding: 8px 10px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; }
+    .pick li.sel { background: var(--sel); }
+    .pick .quitar { position: absolute; right: 8px; top: 8px; border: 0; background: transparent; color: var(--suave); cursor: pointer; font-size: 18px; }
+    table.cat { background: var(--panel); border-radius: 10px; overflow: hidden; }
+    table.cat td, table.cat th { font-size: 14px; }
+    .mas { color: var(--ok); font-weight: 700; } .menos { color: var(--error); font-weight: 700; }
+    .etq { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--borde); }
+    .modos { display: flex; gap: 8px; flex-wrap: wrap; }
+    .modos label { display: flex; gap: 6px; align-items: center; border: 2px solid var(--borde); border-radius: 10px; padding: 8px 12px; cursor: pointer; font-size: 15px; color: var(--texto); margin: 0; }
+    .modos label.on { border-color: var(--acento); background: var(--sel); }
+    .vista { font-size: 22px; font-weight: 800; margin: 10px 0; }
+    .err { color: var(--error); font-weight: 600; min-height: 1.4em; }
+    .alerta { background: var(--aviso); color: #fff; border-radius: 10px; padding: 10px 14px; margin: 12px 0; font-weight: 600; }
+    .pie { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 10px; color: var(--suave); }
+  </style>
+</head>
+<body>
+  <header class="barra">
+    <h1>Inventario</h1>
+    <span class="atajos">Kárdex y ajustes de existencias</span>
+    <a class="enlace" href="/catalogo.html">Catálogo</a>
+    <a class="enlace" href="/">← Volver a la caja</a>
+  </header>
+  <div class="pagina">
+    <div id="alerta" class="alerta" hidden role="alert"></div>
+    <div class="tabs">
+      <button class="btn" id="tab-ajuste" type="button">Ajustar existencias</button>
+      <button class="btn sec" id="tab-kardex" type="button">Kárdex</button>
+    </div>
+
+    <!-- AJUSTE -->
+    <section id="sec-ajuste">
+      <div class="tarjeta">
+        <span class="campo-l">1 · Producto</span>
+        <div class="pick" id="pick-ajuste"></div>
+        <div id="ficha" class="ayuda" style="margin-top:10px"></div>
+      </div>
+      <form id="form-ajuste" class="tarjeta" hidden>
+        <span class="campo-l">2 · Tipo de ajuste</span>
+        <div class="modos" id="modos"></div>
+        <div class="rejilla" style="margin-top:12px">
+          <div><label for="a-cant" id="l-cant">Cantidad</label><input id="a-cant" inputmode="numeric" autocomplete="off" required></div>
+          <div><label for="a-motivo">Motivo *</label><select id="a-motivo" required></select></div>
+          <div class="ancho"><label for="a-nota">Nota (obligatoria si el motivo es "Otro")</label><textarea id="a-nota" rows="2" maxlength="300"></textarea></div>
+        </div>
+        <div class="vista" id="vista"></div>
+        <p class="err" id="err-ajuste" role="alert"></p>
+        <div class="fila-btn"><button type="submit" class="btn" id="btn-ajuste">Registrar ajuste</button></div>
+      </form>
+    </section>
+
+    <!-- KÁRDEX -->
+    <section id="sec-kardex" hidden>
+      <div class="tarjeta">
+        <div class="rejilla">
+          <div class="ancho"><label>Producto (vacío = todos)</label><div class="pick" id="pick-kardex"></div></div>
+          <div><label for="k-tipo">Tipo</label>
+            <select id="k-tipo"><option value="">Todos</option><option value="venta">Venta</option><option value="ajuste">Ajuste</option><option value="compra">Compra</option><option value="cancelacion">Cancelación</option></select></div>
+          <div><label for="k-desde">Desde</label><input type="date" id="k-desde"></div>
+          <div><label for="k-hasta">Hasta</label><input type="date" id="k-hasta"></div>
+          <div><button class="btn" id="k-buscar" type="button">Consultar</button></div>
+        </div>
+      </div>
+      <table class="cat">
+        <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th class="num">Cantidad</th><th class="num">Saldo</th><th>Motivo / nota</th></tr></thead>
+        <tbody id="filas"></tbody>
+      </table>
+      <div class="pie"><span id="k-info"></span><span><button class="btn sec peq" id="k-ant" type="button">← Anterior</button> <button class="btn sec peq" id="k-sig" type="button">Siguiente →</button></span></div>
+    </section>
+  </div>
+  <script type="module" src="/js/inventario.js"></script>
+</body>
+</html>

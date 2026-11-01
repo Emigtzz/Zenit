@@ -3,7 +3,7 @@ const { Router } = require('express');
 const v = require('../middlewares/validar');
 
 // Rutas = tabla "URL -> validación -> controlador". Nada más.
-module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc }) {
+module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl: ic }) {
   const r = Router();
 
   r.get('/config', vc.config);
@@ -27,6 +27,11 @@ module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc }) {
   r.get('/ventas/:id', vc.obtener);
   r.get('/ventas/:id/impresion', vc.estadoImpresion);
   r.post('/ventas/:id/reimprimir', vc.reimprimir);
+
+  r.get('/inventario/motivos', ic.motivos);
+  r.get('/inventario/kardex', v.validar(v.kardexSchema, 'query'), ic.kardex);
+  r.get('/inventario/verificar', ic.verificar);
+  r.post('/inventario/ajustes', v.validar(v.ajusteSchema), ic.ajustar);
 
   return r;
 };
