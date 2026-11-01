@@ -37,6 +37,13 @@ const config = {
     columnas: entero('PRINTER_COLUMNS', 48, { min: 20, max: 80 }),
     carpetaTickets: path.join(raiz, 'data', 'tickets'),
   },
+  // Importación de facturas (fase 3)
+  costoIncluyeImpuestos: (process.env.COSTO_INCLUYE_IMPUESTOS ?? 'true').toLowerCase() !== 'false',
+  carpetaFacturas: path.join(raiz, 'data', 'facturas'),
+  ia: {
+    apiKey: process.env.ANTHROPIC_API_KEY || '',
+    modelo: process.env.IA_MODELO || 'claude-opus-5-5',
+  },
   mayoreoPorcentaje: entero('MAYOREO_PORCENTAJE', 5, { min: 0, max: 100 }),
   raiz,
 };
