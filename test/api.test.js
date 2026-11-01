@@ -23,7 +23,11 @@ async function crearUsuario(db, nombre, rol, contrasena) {
 async function levantar({ sinSesion = false } = {}) {
   const db = crearBaseDePrueba();
   const impresiones = [];
-  const impresora = { imprimirVenta: async (v) => { impresiones.push(v); return { impreso: true }; } };
+  const cortesImpresos = [];
+  const impresora = {
+    imprimirVenta: async (v) => { impresiones.push(v); return { impreso: true }; },
+    imprimirCorte: async (d) => { cortesImpresos.push(d); return { impreso: true }; },
+  };
   const servidor = crearApp({ db, config, impresora }).listen(0, '127.0.0.1');
   await new Promise((r) => servidor.once('listening', r));
   const base = `http://127.0.0.1:${servidor.address().port}/api`;
@@ -49,7 +53,7 @@ async function levantar({ sinSesion = false } = {}) {
     const u = await entrar(nombre, rol, contrasena);
     return Object.assign((m, ruta, cuerpo) => crudo(m, ruta, cuerpo, { cookie: u.cookie }), { id: u.id });
   };
-  return { db, pedir, crudo, como, dueno, impresiones, host: `127.0.0.1:${servidor.address().port}`, cerrar: () => servidor.close() };
+  return { db, pedir, crudo, como, dueno, impresiones, cortesImpresos, host: `127.0.0.1:${servidor.address().port}`, cerrar: () => servidor.close() };
 }
 
 test('GET /productos/codigo/:codigo resuelve barras y código corto; 404 si no existe', async () => {
@@ -329,4 +333,88 @@ test('petición con Origin de otro sitio se rechaza (anti-CSRF); con el mismo or
     assert.equal(buena.status, 201);
     assert.equal(stockDe(s.db, 1), 9);
   } finally { s.cerrar(); }
+});
+
+// ================= Corte de caja =================
+
+test('caja por HTTP: el cajero abre, vende, mueve efectivo y cierra a ciegas; el historial es del dueño', async () => {
+  const s = await levantar();
+  try {
+    s.db.exec('DELETE FROM cortes_caja'); // el helper deja una caja abierta: aquí se parte de cerrada
+    const caj = await s.como('Beto', 'cajero');
+    assert.deepEqual((await caj('GET', '/caja/estado')).json, { abierta: false, corte: null });
+    // sin caja abierta no se vende
+    const sinCaja = await caj('POST', '/ventas', { items: [{ producto_id: 1, cantidad: 1 }], pagos: [{ metodo: 'efectivo', monto: 1850 }] });
+    assert.equal(sinCaja.status, 409);
+    assert.equal(sinCaja.json.error.codigo, 'CAJA_CERRADA');
+
+    assert.equal((await caj('POST', '/caja/abrir', { fondo_inicial: 50000 })).status, 201);
+    assert.equal((await caj('POST', '/caja/abrir', { fondo_inicial: 0 })).json.error.codigo, 'CAJA_YA_ABIERTA');
+    const est = (await caj('GET', '/caja/estado')).json;
+    assert.equal(est.abierta, true);
+    assert.ok(!('fondo_inicial' in est.corte)); // el cajero no ve el fondo en el estado
+    assert.equal((await s.pedir('GET', '/caja/estado')).json.corte.fondo_inicial, 50000);
+
+    assert.equal((await caj('POST', '/ventas', { items: [{ producto_id: 1, cantidad: 2 }], pagos: [{ metodo: 'efectivo', monto: 5000 }] })).status, 201);
+    assert.equal((await caj('POST', '/caja/movimientos', { tipo: 'retiro', monto: 10000, motivo: 'Pago de hielo' })).status, 201);
+
+    const ciego = (await caj('GET', '/caja/resumen')).json;
+    assert.deepEqual(Object.keys(ciego).sort(), ['corte', 'num_ventas']);
+    const dueno = (await s.pedir('GET', '/caja/resumen')).json;
+    assert.equal(dueno.efectivo_esperado, 50000 + 3700 - 10000);
+
+    const idCorte = (await caj('GET', '/caja/estado')).json.corte.id;
+    for (const [m, r] of [['GET', '/caja/cortes'], ['GET', `/caja/cortes/${idCorte}`], ['POST', `/caja/cortes/${idCorte}/imprimir`]]) {
+      assert.equal((await caj(m, r)).status, 403, `${m} ${r}`);
+    }
+
+    const cierre = await caj('POST', '/caja/cerrar', { efectivo_contado: 43000, notas: 'faltaron $0' });
+    assert.equal(cierre.status, 200);
+    assert.equal(cierre.json.corte.efectivo_esperado, 43700);
+    assert.equal(cierre.json.corte.diferencia, -700);
+    assert.equal(cierre.json.corte.usuario_cierre, 'Beto');
+    await new Promise((r) => setImmediate(r));
+    assert.equal(s.cortesImpresos.length, 1); // el corte se mandó a imprimir
+    assert.equal((await caj('POST', '/caja/cerrar', { efectivo_contado: 0 })).json.error.codigo, 'CAJA_CERRADA');
+    assert.equal((await caj('POST', '/ventas', { items: [{ producto_id: 1, cantidad: 1 }], pagos: [{ metodo: 'efectivo', monto: 1850 }] })).status, 409);
+
+    const lista = (await s.pedir('GET', '/caja/cortes')).json;
+    assert.equal(lista.total, 1);
+    assert.equal(lista.filas[0].diferencia, -700);
+    const det = (await s.pedir('GET', `/caja/cortes/${idCorte}`)).json;
+    assert.equal(det.por_cajero[0].nombre, 'Beto');
+    assert.equal(det.movimientos[0].motivo, 'Pago de hielo');
+    assert.equal((await s.pedir('POST', `/caja/cortes/${idCorte}/imprimir`)).status, 202);
+  } finally { s.cerrar(); }
+});
+
+test('caja: validaciones (fondo/contado negativos o decimales, motivo corto, retiro excesivo) y sin sesión 401', async () => {
+  const s = await levantar();
+  try {
+    s.db.exec('DELETE FROM cortes_caja');
+    assert.equal((await s.pedir('POST', '/caja/abrir', { fondo_inicial: -1 })).status, 400);
+    assert.equal((await s.pedir('POST', '/caja/abrir', { fondo_inicial: 10.5 })).status, 400);
+    await s.pedir('POST', '/caja/abrir', { fondo_inicial: 1000 });
+    assert.equal((await s.pedir('POST', '/caja/movimientos', { tipo: 'retiro', monto: 100, motivo: 'x' })).status, 400);
+    assert.equal((await s.pedir('POST', '/caja/movimientos', { tipo: 'robo', monto: 100, motivo: 'abc' })).status, 400);
+    assert.equal((await s.pedir('POST', '/caja/movimientos', { tipo: 'retiro', monto: 1001, motivo: 'demasiado' })).json.error.codigo, 'RETIRO_EXCEDE_EFECTIVO');
+    assert.equal((await s.pedir('POST', '/caja/cerrar', { efectivo_contado: -5 })).status, 400);
+    assert.equal((await s.crudo('GET', '/caja/estado')).status, 401);
+  } finally { s.cerrar(); }
+});
+
+test('si la impresora lanza al imprimir el corte, el cierre SÍ queda guardado y responde 200', async () => {
+  const db = crearBaseDePrueba();
+  const impresora = { imprimirVenta: async () => ({}), imprimirCorte: () => { throw new Error('impresora desconectada'); } };
+  const servidor = crearApp({ db, config, impresora }).listen(0, '127.0.0.1');
+  await new Promise((r) => servidor.once('listening', r));
+  try {
+    const id = Number(await crearUsuario(db, 'Ana', 'dueño', 'contraseña-larga'));
+    const base = `http://127.0.0.1:${servidor.address().port}/api`;
+    const login = await fetch(base + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ usuario_id: id, contrasena: 'contraseña-larga' }) });
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const r = await fetch(base + '/caja/cerrar', { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ efectivo_contado: 0 }) });
+    assert.equal(r.status, 200);
+    assert.equal(db.prepare('SELECT COUNT(*) n FROM cortes_caja WHERE cierre IS NULL').get().n, 0);
+  } finally { servidor.close(); }
 });

@@ -63,3 +63,39 @@ test('si la impresora real falla, no lanza: devuelve el error', async () => {
   assert.equal(r.impreso, false);
   assert.match(r.error, /PRINTER_INTERFACE/);
 });
+
+const { construirDocumentoCorte } = require('../src/services/ticketService');
+const detalleCorte = {
+  corte: { id: 3, apertura: '2026-11-02T15:00:00.000Z', cierre: '2026-11-02T23:00:00.000Z', usuario_apertura: 'Ana', usuario_cierre: 'Beto',
+    fondo_inicial: 50000, efectivo_contado: 43000, diferencia: -700, notas: 'faltó un billete' },
+  num_ventas: 12, total_ventas: 123450, descuentos: 250, ventas_efectivo: 3700, ventas_tarjeta: 1200, ventas_transferencia: 2500,
+  ingresos: 0, retiros: 10000, efectivo_esperado: 43700,
+  por_cajero: [{ nombre: 'Beto', num_ventas: 8, total: 90000 }, { nombre: 'Ana', num_ventas: 4, total: 33450 }],
+  movimientos: [{ tipo: 'retiro', monto: 10000, motivo: 'Pago de hielo' }],
+};
+
+test('ticket de corte: totales, desglose, movimientos, esperado/contado y FALTANTE con firma', () => {
+  const t = aTexto(construirDocumentoCorte(detalleCorte, negocio, 48), 48);
+  for (const frag of ['CORTE DE CAJA #000003', 'por Ana', 'por Beto', 'Ventas (12)', '$1,234.50', 'incluye mayoreo', 'Tarjeta', 'Transferencia',
+    'Beto (8)', 'Ana (4)', 'Fondo inicial', '$500.00', '- Retiros', 'Pago de hielo', 'Efectivo esperado', '$437.00', 'Efectivo contado', '$430.00', 'FALTANTE', '-$7.00', 'faltó un billete', 'Firma']) {
+    assert.ok(t.includes(frag), `falta "${frag}"`);
+  }
+  for (const linea of t.split('\n')) assert.ok(linea.length <= 48, `renglón excede 48: ${linea}`);
+});
+
+test('ticket de corte: sobrante y diferencia cero se rotulan bien', () => {
+  const sob = aTexto(construirDocumentoCorte({ ...detalleCorte, corte: { ...detalleCorte.corte, diferencia: 300 } }, negocio), 48);
+  assert.ok(sob.includes('SOBRANTE') && sob.includes('+$3.00'));
+  const cero = aTexto(construirDocumentoCorte({ ...detalleCorte, corte: { ...detalleCorte.corte, diferencia: 0 } }, negocio), 48);
+  assert.ok(cero.includes('DIFERENCIA') && !cero.includes('FALTANTE'));
+});
+
+test('el corte nunca abre el cajón y se guarda como corte-N.txt en modo file', async () => {
+  const carpeta = fs.mkdtempSync(path.join(os.tmpdir(), 'zenit-corte-'));
+  const svc = impresoraService({ negocio, impresora: { modo: 'file', columnas: 48, carpetaTickets: carpeta } }, { log: () => {} });
+  const r = await svc.imprimirCorte(detalleCorte);
+  assert.equal(r.impreso, true);
+  assert.equal(r.cajon_abierto, false);
+  assert.ok(path.basename(r.archivo) === 'corte-000003.txt');
+  assert.ok(!fs.readFileSync(r.archivo, 'utf8').includes('CAJÓN ABIERTO'));
+});

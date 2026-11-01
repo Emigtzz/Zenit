@@ -14,6 +14,8 @@ const authService = require('./services/authService');
 const usuarioService = require('./services/usuarioService');
 const authController = require('./controllers/authController');
 const authMiddlewares = require('./middlewares/auth');
+const corteService = require('./services/corteService');
+const cajaController = require('./controllers/cajaController');
 const rutas = require('./routes');
 const { noEncontrada, manejarErrores } = require('./middlewares/errores');
 
@@ -32,6 +34,7 @@ function crearApp({ db, config, impresora }) {
   app.use('/api', mw.mismoOrigen, mw.cargarSesion);
   app.use('/api', rutas({
     mw,
+    cajaCtrl: cajaController(corteService(db), imp),
     authCtrl: authController({ auth, usuarios: usuarioService(db), config, mw, vidaSesionMs: auth.VIDA_SESION_MS }),
     catalogoCtrl: catalogoController(catalogo, busqueda),
     ventaCtrl: ventaController(ventas, imp, config),

@@ -80,6 +80,19 @@ const usuarioEditarSchema = z.object({ nombre: nombreUsuario, rol: z.enum(['caje
 const restablecerSchema = z.object({ contrasena: contrasenaCampo });
 const cambioContrasenaSchema = z.object({ actual: contrasenaCampo, nueva: contrasenaCampo });
 
+const montoCero = z.number({ error: 'Debe ser un número' }).int('Debe ser entero en centavos').min(0, 'No puede ser negativo').max(100_000_000);
+const abrirCajaSchema = z.object({ fondo_inicial: montoCero });
+const movimientoCajaSchema = z.object({
+  tipo: z.enum(['ingreso', 'retiro']),
+  monto: z.number({ error: 'Debe ser un número' }).int().positive('Debe ser mayor a 0').max(100_000_000),
+  motivo: z.string().trim().min(3, 'Explica el motivo').max(120),
+});
+const cerrarCajaSchema = z.object({
+  efectivo_contado: montoCero,
+  notas: z.preprocess((v) => (typeof v === 'string' ? v.trim() || null : v), z.string().max(300).nullable().optional().default(null)),
+});
+const listaCortesSchema = z.object({ pagina: z.coerce.number().int().min(1).default(1), por_pagina: z.coerce.number().int().min(1).max(100).default(30) });
+
 const buscarSchema = z.object({ q: z.string().max(100).default('') });
 const listaProductosSchema = z.object({
   incluir_inactivos: z.enum(['0', '1']).default('0'),
@@ -87,4 +100,5 @@ const listaProductosSchema = z.object({
 });
 
 module.exports = { validar, categoriaSchema, productoSchema, ventaSchema, buscarSchema, listaProductosSchema, ajusteSchema, kardexSchema,
+  abrirCajaSchema, movimientoCajaSchema, cerrarCajaSchema, listaCortesSchema,
   loginSchema, setupSchema, usuarioNuevoSchema, usuarioEditarSchema, restablecerSchema, cambioContrasenaSchema };

@@ -4,7 +4,7 @@ const path = require('node:path');
 const os = require('node:os');
 const { execFile } = require('node:child_process');
 const { ThermalPrinter, PrinterTypes, CharacterSet } = require('node-thermal-printer');
-const { construirDocumento, aTexto, aEscPos, huboEfectivo } = require('./ticketService');
+const { construirDocumento, construirDocumentoCorte, aTexto, aEscPos, huboEfectivo } = require('./ticketService');
 
 // Orquesta la impresión según PRINTER_MODE:
 //   console -> escribe el ticket en la terminal      (simulación)
@@ -37,21 +37,20 @@ module.exports = function impresoraService(config, { log = console.log } = {}) {
   }
 
   return {
-    async imprimirVenta(venta) {
-      const abrirCajon = huboEfectivo(venta); // el cajón se abre SOLO si hubo efectivo
-      const doc = construirDocumento(venta, negocio, impresora.columnas);
+    // Emisión genérica: la usan el ticket de venta y el de corte.
+    async emitir(doc, { abrirCajon, archivo: nombreArchivo, descripcion }) {
       const resultado = { modo: impresora.modo, impreso: false, cajon_abierto: false, error: null };
       try {
         if (impresora.modo === 'real') {
           await enviarReal(aEscPos(doc, { columnas: impresora.columnas, abrirCajon }));
         } else {
           const texto = aTexto(doc, impresora.columnas);
-          const aviso = abrirCajon ? '[SIMULACIÓN] >>> CAJÓN ABIERTO (pulso ESC p) <<<' : '[SIMULACIÓN] cajón NO se abre (sin efectivo)';
+          const aviso = abrirCajon ? '[SIMULACIÓN] >>> CAJÓN ABIERTO (pulso ESC p) <<<' : '[SIMULACIÓN] cajón NO se abre';
           if (impresora.modo === 'console') {
             log(`\n${texto}${aviso}\n`);
           } else {
             fs.mkdirSync(impresora.carpetaTickets, { recursive: true });
-            const archivo = path.join(impresora.carpetaTickets, `ticket-${String(venta.id).padStart(6, '0')}.txt`);
+            const archivo = path.join(impresora.carpetaTickets, nombreArchivo);
             fs.writeFileSync(archivo, `${texto}${aviso}\n`, 'utf8');
             resultado.archivo = archivo;
           }
@@ -60,9 +59,23 @@ module.exports = function impresoraService(config, { log = console.log } = {}) {
         resultado.cajon_abierto = abrirCajon;
       } catch (err) {
         resultado.error = err.message;
-        log(`[impresora] No se pudo imprimir la venta ${venta.id}: ${err.message}`);
+        log(`[impresora] No se pudo imprimir ${descripcion}: ${err.message}`);
       }
       return resultado;
+    },
+
+    imprimirVenta(venta) {
+      return this.emitir(construirDocumento(venta, negocio, impresora.columnas), {
+        abrirCajon: huboEfectivo(venta), // el cajón se abre SOLO si hubo efectivo
+        archivo: `ticket-${String(venta.id).padStart(6, '0')}.txt`, descripcion: `la venta ${venta.id}`,
+      });
+    },
+
+    // El corte nunca abre el cajón.
+    imprimirCorte(detalle) {
+      return this.emitir(construirDocumentoCorte(detalle, negocio, impresora.columnas), {
+        abrirCajon: false, archivo: `corte-${String(detalle.corte.id).padStart(6, '0')}.txt`, descripcion: `el corte ${detalle.corte.id}`,
+      });
     },
   };
 };
