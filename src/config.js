@@ -41,6 +41,14 @@ const config = {
   },
   // "Hoy" es el día de la TIENDA, no el de UTC ni el del servidor.
   zonaHoraria: validarZona(process.env.NEGOCIO_ZONA_HORARIA || 'America/Mexico_City'),
+  // Sincronización con Supabase (opcional: sin estas variables la caja funciona igual, solo que no sube nada)
+  sync: (() => {
+    const url = (process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+    const anonKey = (process.env.SUPABASE_ANON_KEY || '').trim();
+    const email = (process.env.SYNC_EMAIL || '').trim();
+    const password = process.env.SYNC_PASSWORD || '';
+    return { url, anonKey, email, password, intervaloSeg: entero('SYNC_INTERVALO_SEG', 60, { min: 15, max: 3600 }), habilitada: Boolean(url && anonKey && email && password) };
+  })(),
   // Importación de facturas (fase 3)
   costoIncluyeImpuestos: (process.env.COSTO_INCLUYE_IMPUESTOS ?? 'true').toLowerCase() !== 'false',
   carpetaFacturas: path.join(raiz, 'data', 'facturas'),
