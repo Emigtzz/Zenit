@@ -4,11 +4,12 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const config = require('../src/config');
+const { esClaveDeAdministrador } = require('../src/sync/claves');
 
 const { url, anonKey } = config.sync;
 if (!url || !anonKey) { console.error('Faltan SUPABASE_URL y SUPABASE_ANON_KEY en el archivo .env. Mira supabase/LEEME.md.'); process.exit(1); }
-if (/service_role/i.test(anonKey) || anonKey.split('.').length === 3 && JSON.parse(Buffer.from(anonKey.split('.')[1], 'base64url').toString() || '{}').role === 'service_role') {
-  console.error('⛔ Esa es la clave service_role (administrador total). NUNCA va en la app del celular. Usa la clave "anon" / "publishable".'); process.exit(1);
+if (esClaveDeAdministrador(anonKey)) {
+  console.error('⛔ Esa es una clave de ADMINISTRADOR (service_role / sb_secret_). NUNCA va en la app del celular. Usa la clave "anon" / "publishable".'); process.exit(1);
 }
 const dir = path.join(__dirname, '..', 'pwa');
 fs.writeFileSync(path.join(dir, 'config.js'), `// Generado por "npm run pwa:configurar". La URL y la clave anon/publishable no son secretas: la seguridad la dan los permisos RLS.\nexport const CONFIG = {\n  SUPABASE_URL: ${JSON.stringify(url)},\n  SUPABASE_ANON_KEY: ${JSON.stringify(anonKey)},\n};\n`);

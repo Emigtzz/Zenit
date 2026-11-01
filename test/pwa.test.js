@@ -77,7 +77,10 @@ test('pwa:configurar copia URL y clave anon del .env, renueva la versión del se
   const jwtService = `${Buffer.from('{"alg":"HS256"}').toString('base64url')}.${Buffer.from('{"role":"service_role"}').toString('base64url')}.x`;
   const mala = correr({ SUPABASE_URL: 'https://a.supabase.co', SUPABASE_ANON_KEY: jwtService });
   assert.equal(mala.ok, false);
-  assert.match(mala.out, /service_role/);
+  assert.match(mala.out, /service_role|ADMINISTRADOR/);
+  const secreta = correr({ SUPABASE_URL: 'https://a.supabase.co', SUPABASE_ANON_KEY: 'sb_secret_abcdefghijklmnop' });   // formato NUEVO de Supabase
+  assert.equal(secreta.ok, false);
+  assert.match(secreta.out, /ADMINISTRADOR/);
   assert.match(fs.readFileSync(path.join(tmp, 'pwa', 'sw.js'), 'utf8'), /zenit-pwa-v1/);                    // no se tocó nada
   const buena = correr({ SUPABASE_URL: 'https://a.supabase.co/', SUPABASE_ANON_KEY: 'sb_publishable_abc' });
   assert.equal(buena.ok, true);

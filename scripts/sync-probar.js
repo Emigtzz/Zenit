@@ -3,6 +3,7 @@
 //   npm run sync:probar            revisa configuración, credenciales, negocio, esquema y seguridad
 //   npm run sync:probar -- --subir además ejecuta UN ciclo real de sincronización
 const config = require('../src/config');
+const { esClaveDeAdministrador } = require('../src/sync/claves');
 const { abrirBase } = require('../src/db/connection');
 const { migrar } = require('../src/db/migrate');
 const { crearNubeSupabase } = require('../src/sync/nubeSupabase');
@@ -15,10 +16,11 @@ const aviso = (t) => console.log(`  ⚠ ${t}`);
 (async () => {
   const s = config.sync;
   console.log('\nProbando la conexión con Supabase…\n');
+  if (config.sync.advertencia) { mal(config.sync.advertencia); process.exit(1); }
   const falta = [['SUPABASE_URL', s.url], ['SUPABASE_ANON_KEY', s.anonKey], ['SYNC_EMAIL', s.email], ['SYNC_PASSWORD', s.password]].filter(([, v]) => !v).map(([k]) => k);
   if (falta.length) { mal(`Falta en el archivo .env: ${falta.join(', ')}. Sigue supabase/LEEME.md.`); process.exit(1); }
   ok(`Configuración completa (${s.url})`);
-  if (/service_role/i.test(s.anonKey)) { mal('SUPABASE_ANON_KEY parece la clave service_role (administrador). Usa la clave "anon" / "publishable".'); process.exit(1); }
+  if (esClaveDeAdministrador(s.anonKey)) { mal('SUPABASE_ANON_KEY es una clave de ADMINISTRADOR (service_role / sb_secret_). Usa la clave "anon" / "publishable".'); process.exit(1); }
 
   const nube = crearNubeSupabase({ url: s.url, anonKey: s.anonKey, email: s.email, password: s.password });
   let r;

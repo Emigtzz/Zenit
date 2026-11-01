@@ -319,3 +319,24 @@ test('EQUIVALENCIA caja vs nube: mismas estadísticas (SQLite+JS contra Postgres
     assert.ok(r.top.por_piezas.length === 10);
   } finally { await nube.cerrar(); }
 });
+
+test('claves de ADMINISTRADOR (formato viejo y nuevo de Supabase) se reconocen; las públicas no', () => {
+  const { esClaveDeAdministrador: admin } = require('../src/sync/claves');
+  const jwt = (rol) => `${Buffer.from('{"alg":"HS256"}').toString('base64url')}.${Buffer.from(JSON.stringify({ role: rol })).toString('base64url')}.firma`;
+  assert.equal(admin('sb_secret_abc123'), true);           // nuevo: secreta
+  assert.equal(admin(jwt('service_role')), true);          // viejo: service_role
+  assert.equal(admin('sb_publishable_abc123'), false);     // nuevo: pública
+  assert.equal(admin(jwt('anon')), false);                 // viejo: anon
+  assert.equal(admin(''), false);
+  assert.equal(admin(undefined), false);
+});
+
+test('si ponen una clave de administrador en el .env, la sincronización se DESACTIVA (la caja sigue cobrando) y se avisa', () => {
+  const { execFileSync } = require('node:child_process');
+  const leer = (clave) => JSON.parse(execFileSync('node', ['-e', 'const c=require("./src/config");console.log(JSON.stringify({h:c.sync.habilitada,a:c.sync.advertencia}))'],
+    { cwd: require('node:path').join(__dirname, '..'), env: { PATH: process.env.PATH, SUPABASE_URL: 'https://a.supabase.co', SUPABASE_ANON_KEY: clave, SYNC_EMAIL: 'c@x.com', SYNC_PASSWORD: 'pw' }, encoding: 'utf8' }));
+  assert.deepEqual(leer('sb_publishable_ok'), { h: true, a: null });
+  const mala = leer('sb_secret_peligrosa');
+  assert.equal(mala.h, false);
+  assert.match(mala.a, /ADMINISTRADOR/);
+});

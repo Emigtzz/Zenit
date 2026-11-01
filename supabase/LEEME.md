@@ -44,7 +44,7 @@ Esto crea las tablas y deja la seguridad así: la **caja** solo puede subir y le
 
 1. En Supabase: **Project Settings** → **API**. Copia dos datos:
    - **Project URL** (algo como `https://abcd1234.supabase.co`)
-   - La clave **anon** o **publishable** (la pública).
+   - La clave **pública**: en proyectos nuevos se llama **publishable** y empieza con `sb_publishable_…` (en proyectos viejos, **anon**). La otra, la **secret** (`sb_secret_…`) o **service_role**, es de administrador: **no la copies**.
 2. Abre el archivo `.env` de la caja (en la carpeta del proyecto) y llena:
 
 ```
@@ -54,7 +54,7 @@ SYNC_EMAIL=el_correo_de_la_caja
 SYNC_PASSWORD=la_contraseña_de_la_caja
 ```
 
-> ⛔ **Nunca** pongas aquí la clave `service_role` (administrador total) ni la contraseña de la base de datos. La caja no las necesita y, si la computadora se perdiera o la revisara alguien, serían un riesgo enorme.
+> ⛔ **Nunca** pongas aquí la clave `secret` / `service_role` (administrador total) ni la contraseña de la base de datos. Si lo haces por error, la caja desactiva la sincronización y te lo avisa en rojo (y sigue cobrando). La caja no las necesita y, si la computadora se perdiera o la revisara alguien, serían un riesgo enorme.
 
 3. Reinicia la caja y verifica la conexión:
 
