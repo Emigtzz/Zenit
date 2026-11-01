@@ -172,3 +172,45 @@ test('estado_dueno sin día usa "hoy" de la zona del negocio y negocio vacío de
     assert.equal(r.serie.length, 30);
   } finally { await nube.cerrar(); }
 });
+
+// ---- configurar-negocio.sql: el alta que ejecuta el usuario a mano en Supabase ----
+const fs = require('node:fs'); const path = require('node:path');
+const ALTA = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'configurar-negocio.sql'), 'utf8');
+const alta = (nube, { dueno = 'dueno@x.com', caja = 'caja@x.com', nombre = 'Luna de precios', zona = 'America/Mexico_City' } = {}) =>
+  nube.db.exec(ALTA.replace('CORREO_DEL_DUENO', dueno).replace('CORREO_DE_LA_CAJA', caja).replace("'Luna de precios'", `'${nombre}'`).replace("'America/Mexico_City'", `'${zona}'`));
+async function nubeSinNegocio() {
+  const nube = await crearNube();
+  await nube.db.exec("insert into auth.users (id, email) values (gen_random_uuid(), 'dueno@x.com'), (gen_random_uuid(), 'caja@x.com'), (gen_random_uuid(), 'otro@x.com')");
+  return nube;
+}
+
+test('alta del negocio: crea el negocio y deja a cada quien con su rol; luego la caja sube y el dueño lee', async () => {
+  const nube = await nubeSinNegocio();
+  try {
+    await alta(nube, { dueno: 'DUENO@x.com', nombre: 'Mi tienda', zona: 'America/Tijuana' });   // el correo no distingue mayúsculas
+    const m = (await nube.db.query("select u.email, m.rol, n.nombre, n.zona_horaria from miembros m join auth.users u on u.id = m.user_id join negocios n on n.id = m.negocio_id order by u.email")).rows;
+    assert.deepEqual(m.map((x) => [x.email, x.rol, x.nombre, x.zona_horaria]), [['caja@x.com', 'caja', 'Mi tienda', 'America/Tijuana'], ['dueno@x.com', 'dueno', 'Mi tienda', 'America/Tijuana']]);
+    // de extremo a extremo con los usuarios REALES creados por el alta
+    const id = async (e) => (await nube.db.query('select id from auth.users where email = $1', [e])).rows[0].id;
+    const neg = (await nube.db.query('select id from negocios')).rows[0].id;
+    await subir(nube.como(await id('caja@x.com')), neg, '33333333-3333-4333-8333-333333333333', lote(venta(1, { fecha: new Date().toISOString(), total: 5000 })));
+    const r = await nube.como(await id('dueno@x.com')).rpc('estado_dueno', [neg, null]);
+    assert.equal(r.zona_horaria, 'America/Tijuana');
+    assert.equal(r.serie.reduce((s, x) => s + x.total, 0), 5000);
+  } finally { await nube.cerrar(); }
+});
+
+test('alta del negocio: errores claros y sin dejar nada a medias', async () => {
+  const nube = await nubeSinNegocio();
+  try {
+    const cuenta = async (t) => (await nube.db.query(`select count(*)::int n from ${t}`)).rows[0].n;
+    assert.match(await rechaza(alta(nube, { dueno: 'typo@x.com' })), /No encuentro al usuario "typo@x.com"/);
+    assert.match(await rechaza(alta(nube, { caja: 'dueno@x.com' })), /DOS usuarios distintos/);
+    assert.match(await rechaza(alta(nube, { zona: 'Mexico/Ciudad' })), /time zone|zona/i);
+    assert.deepEqual([await cuenta('negocios'), await cuenta('miembros')], [0, 0]);
+    await alta(nube);
+    assert.match(await rechaza(alta(nube)), /ya pertenece a un negocio/);                       // ejecutarla dos veces NO duplica
+    assert.match(await rechaza(alta(nube, { caja: 'otro@x.com' })), /ya pertenece a un negocio/); // ni reutiliza al dueño en otro negocio
+    assert.deepEqual([await cuenta('negocios'), await cuenta('miembros')], [1, 2]);
+  } finally { await nube.cerrar(); }
+});

@@ -67,11 +67,19 @@ function crearNubeSupabase({ url, anonKey, email, password, timeoutMs = 30000, f
         p_ventas: lote.ventas, p_detalle: lote.detalle, p_pagos: lote.pagos, p_cortes: cortes, p_estado: estado,
       });
     },
-    // Para `npm run sync:probar`: verifica credenciales, negocio, rol y que el esquema esté instalado. No escribe nada.
+    // Para `npm run sync:probar`: verifica credenciales, negocio, rol, esquema, zona horaria y que SIN sesión no se pueda leer nada.
+    // No escribe nada.
     async probar() {
       await asegurar();
-      const version = await rpc('version_esquema', {});
-      return { negocio_id: negocioId, rol: 'caja', version_esquema: version };
+      const version_esquema = await rpc('version_esquema', {});
+      const { data: negocios, error } = await cliente.from('negocios').select('nombre, zona_horaria').eq('id', negocioId);
+      if (error) throw clasificar(error);
+
+      // Prueba de seguridad: con la clave pública y SIN iniciar sesión, las tablas deben estar cerradas.
+      const anonimo = crearCliente(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }, global: { fetch: conTiempo } });
+      const r = await anonimo.from('ventas').select('id_local').limit(1);
+      const acceso_anonimo = r.error ? (r.error.code === '42501' || r.status === 401 || r.status === 403 ? 'bloqueado' : 'error') : (r.data.length ? 'ABIERTO' : 'solo_rls');
+      return { negocio_id: negocioId, negocio: negocios[0]?.nombre ?? null, zona_horaria: negocios[0]?.zona_horaria ?? null, rol: 'caja', version_esquema, acceso_anonimo };
     },
   };
 }

@@ -10,7 +10,8 @@
     "db:reset": "node scripts/reset-db.js",
     "test": "node --test \"test/**/*.test.js\"",
     "usuarios": "node scripts/usuarios.js",
-    "pwa:configurar": "node scripts/pwa-configurar.js"
+    "pwa:configurar": "node scripts/pwa-configurar.js",
+    "sync:probar": "node scripts/sync-probar.js"
   },
   "repository": {
     "type": "git",

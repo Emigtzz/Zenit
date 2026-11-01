@@ -30,6 +30,8 @@ const base = (extra = {}) => (p, todas) => {
   if (p.ruta === '/rest/v1/miembros') return extra.miembros ? extra.miembros(p) : json([{ negocio_id: NEG, rol: 'caja' }]);
   if (p.ruta === '/rest/v1/rpc/sincronizar') return extra.sincronizar ? extra.sincronizar(p, todas) : json({ ventas: 1, cortes: 0 });
   if (p.ruta === '/rest/v1/rpc/version_esquema') return json(1);
+  if (p.ruta === '/rest/v1/negocios') return json([{ nombre: 'Luna de precios', zona_horaria: 'America/Mexico_City' }]);
+  if (p.ruta === '/rest/v1/ventas') return extra.ventas ? extra.ventas(p) : json({ code: '42501', message: 'permission denied for table ventas' }, 401);
   return json({ message: 'ruta inesperada' }, 404);
 };
 const adaptador = (fetchSimulado, extra = {}) => crearNubeSupabase({ url: URL_NUBE, anonKey: CLAVE, email: 'caja@x.com', password: 'pw', fetchImpl: fetchSimulado, timeoutMs: 200, ...extra });
@@ -108,9 +110,18 @@ test('JWT vencido: vuelve a iniciar sesión UNA vez y reintenta con el token nue
   void intento;
 });
 
-test('probar(): verifica sesión, negocio y versión del esquema sin escribir nada', async () => {
+test('probar(): sesión, negocio, zona, esquema y acceso anónimo cerrado; sin escribir nada', async () => {
   const s = servidor(base());
   const r = await adaptador(s.fetchSimulado).probar();
-  assert.deepEqual(r, { negocio_id: NEG, rol: 'caja', version_esquema: 1 });
+  assert.deepEqual(r, { negocio_id: NEG, negocio: 'Luna de precios', zona_horaria: 'America/Mexico_City', rol: 'caja', version_esquema: 1, acceso_anonimo: 'bloqueado' });
   assert.ok(!s.peticiones.some((p) => p.ruta === '/rest/v1/rpc/sincronizar'));
+  const anon = s.peticiones.find((p) => p.ruta === '/rest/v1/ventas');
+  assert.equal(anon.headers.authorization, `Bearer ${CLAVE}`);   // la prueba anónima va con la clave pública, SIN el JWT del usuario
+});
+
+test('probar() detecta un esquema mal protegido: anónimo que puede leer ventas = ABIERTO', async () => {
+  const abierto = servidor(base({ ventas: () => json([{ id_local: 1 }]) }));
+  assert.equal((await adaptador(abierto.fetchSimulado).probar()).acceso_anonimo, 'ABIERTO');
+  const soloRls = servidor(base({ ventas: () => json([]) }));
+  assert.equal((await adaptador(soloRls.fetchSimulado).probar()).acceso_anonimo, 'solo_rls');
 });

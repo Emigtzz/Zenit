@@ -53,6 +53,7 @@ Otras pantallas (solo dueño):
 - Cortes de caja: <http://localhost:3000/cortes.html>
 - Compras y proveedores: <http://localhost:3000/compras.html>
 - Importar facturas (XML/PDF): <http://localhost:3000/importar.html>
+- Estadísticas: <http://localhost:3000/estadisticas.html>
 
 ## Compras y proveedores
 
@@ -73,6 +74,32 @@ Reglas que conviene conocer:
 - La fecha no puede ser futura. Un mismo producto no puede repetirse en la compra (junta las piezas).
 - **Anular** una compra (motivo obligatorio) revierte el stock con un movimiento `cancelacion` y regresa el costo al de la compra anterior; si no hay otra, al que tenía antes. No pisa un costo que corregiste a mano después. **No se puede anular si lo comprado ya se vendió** (el stock quedaría negativo): haz antes un conteo físico. Anular libera el folio para recapturar la factura correcta. Si la compra se pagó del cajón, el reembolso se registra a mano con `F6`.
 - Costos en pesos con centavos: un costo con fracciones de centavo (p. ej. $0.833 por pieza) se captura redondeado.
+
+## Estadísticas y celular del dueño
+
+**Estadísticas en la caja** (`/estadisticas.html`, solo dueño, funcionan sin internet): ventas del día con tickets, ticket promedio, piezas y descuento de mayoreo; comparación contra ayer y contra el mismo día de la semana pasada; ventas **por hora** y **por método de pago**; los últimos 30 días; los **más vendidos** (7 días, por piezas o importe); estado de la caja con el último corte y el stock bajo. Cada gráfica tiene vista de tabla y tooltips que funcionan con teclado.
+
+- **"Hoy" es el día de la tienda**, no el de UTC ni el del servidor: se define con `NEGOCIO_ZONA_HORARIA` (por defecto `America/Mexico_City`). Un día con cambio de horario dura 23 o 25 horas y se maneja bien.
+- Para un día **a medias** no se pinta una "caída" contra el día completo de ayer; dice *"lleva el 46% de lo vendido ayer"*.
+
+**App del celular del dueño** (`pwa/`, solo lectura): una app instalable que muestra **el mismo tablero** leyendo de Supabase, con inicio de sesión propio. Sube la información la caja (cada ~60 s y siempre que haya algo pendiente), así que **cobrar nunca espera a internet**:
+
+1. Cada venta se guarda primero en la caja con `sincronizada = 0`.
+2. En segundo plano, un ciclo sube lo pendiente en **lotes atómicos** (todo el lote o nada), con espera creciente si falla (hasta 10 min) y sin duplicar si se reintenta.
+3. En cada ciclo manda un **latido**: así el celular distingue "hoy no se ha vendido" de "la caja está desconectada" (aviso a partir de 5 min sin latido).
+4. Lo ya subido que **cambia** (una venta que se cancela, un corte que se corrige) vuelve a quedar pendiente solo.
+5. En la caja, el indicador de arriba dice `☁ Sincronizado hace 2 min` / `☁ 3 por subir` / `☁ Sin conexión · 5 por subir`; el dueño ve el detalle y puede forzar un ciclo en Estadísticas.
+6. Sin internet **en el celular**, la app abre al instante con lo último que vio y lo avisa; a los 10 s sin respuesta deja de esperar.
+
+Sin configurar Supabase **todo lo demás funciona igual**. Para activarlo, sigue [`supabase/LEEME.md`](supabase/LEEME.md) (cuenta, esquema, usuarios, `.env`, publicar la app). Comandos:
+
+```bash
+npm run sync:probar               # verifica credenciales, negocio, esquema, zona horaria y que sin sesión no se lea nada
+npm run sync:probar -- --subir    # además sube lo pendiente ahora
+npm run pwa:configurar            # copia URL y clave pública del .env a pwa/config.js (rechaza la clave de administrador)
+```
+
+**Seguridad:** la caja entra con **su propio usuario** (sin privilegios de administrador); lo que puede hacer lo decide la base con RLS: la caja sube y lee *su* negocio y **nunca borra**; el dueño **solo lee**; sin sesión, **nada**. No se sube información de usuarios, costos, proveedores ni facturas.
 
 ## Importar facturas (XML y PDF)
 
@@ -255,6 +282,8 @@ Todas las rutas excepto `/api/auth/estado`, `/api/auth/login` y `/api/auth/setup
 | `GET /api/inventario/kardex?producto_id=&tipo=&desde=&hasta=&pagina=` | Movimientos con saldo acumulado (fechas `AAAA-MM-DD`, hora local) |
 | `POST /api/importaciones` (cuerpo = el archivo, cabecera `X-Nombre-Archivo`), `GET /api/importaciones[/:id]`, `GET /api/importaciones/:id/archivo`, `POST /api/importaciones/:id/confirmar`, `POST /api/importaciones/:id/descartar` | Importación de facturas (dueño). Confirmar recibe piezas y costo por pieza ya revisados |
 | `GET /api/equivalencias`, `DELETE /api/equivalencias?proveedor_id=&clave=` | Equivalencias proveedor → producto (dueño) |
+| `GET /api/estadisticas?dia=AAAA-MM-DD` | Resumen del día + comparativos + 30 días + top + estado de caja y stock bajo (dueño) |
+| `GET /api/sync/estado`, `POST /api/sync/ahora` | Estado de la sincronización (todos) y forzar un ciclo (dueño) |
 | `GET/POST /api/proveedores`, `PUT /api/proveedores/:id` | Proveedores (dueño) |
 | `POST /api/compras`, `GET /api/compras`, `GET /api/compras/:id`, `POST /api/compras/:id/anular`, `GET /api/compras/producto/:id` | Compras (dueño). El cuerpo: `{proveedor_id, folio_factura?, fecha?, pagar_de_caja?, items:[{producto_id, cantidad, costo_unitario}]}` en centavos |
 | `GET /api/caja/estado`, `POST /api/caja/abrir`, `GET /api/caja/resumen`, `POST /api/caja/movimientos`, `POST /api/caja/cerrar` | Turno de caja (cajero y dueño; el cajero recibe un resumen ciego) |
@@ -266,6 +295,9 @@ Todas las rutas excepto `/api/auth/estado`, `/api/auth/login` y `/api/auth/setup
 
 ```
 src/  routes → controllers → services → repositories → db (SQLite)
+src/sync/  sincronización con la nube (lotes, reintentos, adaptador de Supabase)
+supabase/  esquema, permisos y guía de configuración de la nube
+pwa/  app del celular del dueño + gráficas y tablero compartidos con la caja
 public/  pantalla de caja (HTML/CSS/JS sin framework)
 test/  node:test      scripts/  seed y utilidades      docs/  arquitectura
 ```
@@ -277,7 +309,7 @@ Detalle y decisiones en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
 1. ✅ Venta básica (este README)
 2. ✅ Inventario y control: kárdex, ajustes, stock bajo, usuarios y permisos, corte de caja y compras manuales
 3. ✅ Importación de facturas: XML CFDI y PDF con IA, con revisión obligatoria
-4. Estadísticas, sincronización a Supabase y PWA del dueño
+4. ✅ Estadísticas, sincronización a Supabase y app del celular del dueño (requiere tu cuenta de Supabase: `supabase/LEEME.md`)
 5. Puesta en marcha: catálogo real, etiquetas, respaldos y capacitación
 
 ## Grafo de conocimiento del código (Graphify)
