@@ -7,12 +7,12 @@ module.exports = function compraRepository(db) {
   return {
     insertar: (c) => db.prepare(`INSERT INTO compras (proveedor_id, folio_factura, fecha, total, usuario_id, notas, pagada_de_caja, estado)
         VALUES (@proveedor_id, @folio_factura, @fecha, @total, @usuario_id, @notas, @pagada_de_caja, 'registrada')`).run(c).lastInsertRowid,
-    insertarDetalle: (compraId, d) => db.prepare('INSERT INTO compra_detalle (compra_id, producto_id, cantidad, costo_unitario) VALUES (?, ?, ?, ?)')
-      .run(compraId, d.producto_id, d.cantidad, d.costo_unitario),
+    insertarDetalle: (compraId, d) => db.prepare('INSERT INTO compra_detalle (compra_id, producto_id, cantidad, costo_unitario, costo_previo) VALUES (?, ?, ?, ?, ?)')
+      .run(compraId, d.producto_id, d.cantidad, d.costo_unitario, d.costo_previo),
     obtener(id) {
       const c = db.prepare(`${BASE} WHERE c.id = ?`).get(id);
       if (!c) return undefined;
-      c.detalle = db.prepare(`SELECT d.producto_id, pr.nombre, d.cantidad, d.costo_unitario, d.cantidad * d.costo_unitario AS importe
+      c.detalle = db.prepare(`SELECT d.producto_id, pr.nombre, d.cantidad, d.costo_unitario, d.costo_previo, d.cantidad * d.costo_unitario AS importe
                               FROM compra_detalle d JOIN productos pr ON pr.id = d.producto_id WHERE d.compra_id = ? ORDER BY d.id`).all(id);
       return c;
     },

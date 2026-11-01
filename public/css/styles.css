@@ -78,3 +78,12 @@ tr.flash td { animation: flash .5s; }
 .quien { font-weight: 700; font-size: 14px; }
 .enlace-btn { border: 0; background: transparent; color: var(--suave); text-decoration: underline; cursor: pointer; font: inherit; font-size: 13px; padding: 0; }
 [hidden] { display: none !important; }
+
+/* Selector de producto (compartido) */
+.pick { position: relative; }
+.pick input { width: 100%; font-size: 16px; padding: 8px 10px; border: 2px solid var(--borde); border-radius: 8px; background: var(--fondo); color: var(--texto); font-family: inherit; }
+.pick ul { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin: 2px 0 0; padding: 4px; list-style: none; background: var(--panel); border: 1px solid var(--borde); border-radius: 8px; max-height: 260px; overflow: auto; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+.pick li { padding: 8px 10px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; }
+.pick li.sel { background: var(--sel); }
+.pick .quitar { position: absolute; right: 8px; top: 8px; border: 0; background: transparent; color: var(--suave); cursor: pointer; font-size: 18px; }
+.etq { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--borde); }

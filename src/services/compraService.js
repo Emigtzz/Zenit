@@ -52,7 +52,7 @@ module.exports = function compraService(db, busqueda) {
     const total = e.items.reduce((s, it) => s + it.cantidad * it.costo_unitario, 0);
     const id = compras.insertar({ proveedor_id: e.proveedor_id, folio_factura: e.folio_factura, fecha, total, usuario_id: usuarioId, notas: e.notas, pagada_de_caja: e.pagar_de_caja ? 1 : 0 });
     for (const it of e.items) {
-      compras.insertarDetalle(id, it);
+      compras.insertarDetalle(id, { ...it, costo_previo: productos.obtener(it.producto_id).costo }); // se guarda el costo de ANTES
       inventario.insertarMovimiento({ producto_id: it.producto_id, tipo: 'compra', cantidad: it.cantidad, referencia: `compra:${id}`,
         motivo: null, nota: e.folio_factura ? `Factura ${e.folio_factura}` : null, fecha, usuario_id: usuarioId });
       productos.ajustarStock(it.producto_id, it.cantidad);
@@ -84,7 +84,15 @@ module.exports = function compraService(db, busqueda) {
       productos.ajustarStock(d.producto_id, -d.cantidad);
     }
     compras.marcarAnulada(id, { iso, usuarioId, motivo });
-    return c.detalle.map((d) => sincronizarCosto(d.producto_id)); // el costo regresa al de la compra anterior
+    // El costo regresa al de la compra anterior. Si no queda ninguna, vuelve al que tenía el producto antes de esta compra
+    // (solo si todavía valía lo de esta compra: si alguien lo cambió a mano después, se respeta).
+    return c.detalle.map((d) => {
+      const antes = productos.obtener(d.producto_id).costo; // costo ANTES de tocar nada: es lo que se reporta como "anterior"
+      if (compras.ultimoCosto(d.producto_id) === null && d.costo_previo !== null && antes === d.costo_unitario) {
+        productos.fijarCosto(d.producto_id, d.costo_previo);
+      }
+      return { ...sincronizarCosto(d.producto_id), costo_anterior: antes };
+    });
   });
 
   return {

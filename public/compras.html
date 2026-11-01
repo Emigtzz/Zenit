@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compras · Zenit POS</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { overflow: auto; }
+    .pagina { max-width: 1150px; margin: 0 auto; padding: 16px; width: 100%; }
+    .tabs { display: flex; gap: 8px; margin: 12px 0; }
+    .tarjeta { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+    .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 14px; align-items: end; }
+    .rejilla label, .campo-l { font-size: 13px; color: var(--suave); display: block; margin-bottom: 3px; }
+    .rejilla input[type=text], .rejilla input[type=date], .rejilla select, .rejilla textarea, td input[type=text] { width: 100%; font-size: 16px; padding: 8px 10px; border: 2px solid var(--borde); border-radius: 8px; background: var(--fondo); color: var(--texto); font-family: inherit; }
+    .rejilla .ancho { grid-column: 1 / -1; }
+    .check { display: flex; gap: 8px; align-items: center; font-size: 15px; color: var(--texto) !important; }
+    table.cat { background: var(--panel); border-radius: 10px; overflow: hidden; width: 100%; } table.cat td, table.cat th { font-size: 14px; vertical-align: middle; }
+    td input[type=text] { width: 100px; text-align: right; padding: 5px 8px; }
+    .aviso-linea { color: var(--aviso); font-size: 12px; font-weight: 600; }
+    .total-compra { font-size: 28px; font-weight: 800; text-align: right; margin: 10px 0; }
+    .err { color: var(--error); font-weight: 600; min-height: 1.4em; }
+    .ok-caja { background: var(--ok); color: #fff; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-weight: 600; }
+    .adv { background: var(--aviso); color: #fff; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
+    .nota-baja { color: var(--suave); font-size: 12px; }
+    .pie { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; color: var(--suave); }
+    .btn.peq { padding: 4px 10px; font-size: 13px; }
+    .anulada td { opacity: .5; text-decoration: line-through; }
+    dialog { border: 0; border-radius: 14px; padding: 20px; width: min(600px, 94vw); background: var(--panel); color: var(--texto); }
+    dialog::backdrop { background: rgba(2,6,23,.6); }
+    .lin { display: flex; justify-content: space-between; padding: 3px 0; } .lin.fuerte { font-weight: 800; font-size: 17px; }
+  </style>
+</head>
+<body>
+  <header class="barra">
+    <h1>Compras</h1>
+    <span class="atajos">Entradas de mercancía y proveedores</span>
+    <a class="enlace" href="/inventario.html">Inventario</a>
+    <a class="enlace" href="/catalogo.html">Catálogo</a>
+    <a class="enlace" href="/">← Volver a la caja</a>
+  </header>
+  <div class="pagina">
+    <div class="tabs">
+      <button class="btn" id="tab-nueva" type="button">Nueva compra</button>
+      <button class="btn sec" id="tab-hist" type="button">Historial</button>
+      <button class="btn sec" id="tab-prov" type="button">Proveedores</button>
+    </div>
+    <div id="resultado" hidden></div>
+
+    <!-- NUEVA COMPRA -->
+    <section id="sec-nueva">
+      <div class="tarjeta">
+        <div class="rejilla">
+          <div><label for="c-prov">Proveedor *</label><select id="c-prov"></select></div>
+          <div><label for="c-folio">Folio de factura (opcional)</label><input id="c-folio" type="text" maxlength="40" autocomplete="off"></div>
+          <div><label for="c-fecha">Fecha de la compra</label><input id="c-fecha" type="date"></div>
+          <div><label class="check"><input id="c-caja" type="checkbox"> Pagada con efectivo del cajón</label><span class="nota-baja">Registra el retiro en el corte de caja</span></div>
+        </div>
+      </div>
+      <div class="tarjeta">
+        <span class="campo-l">Agregar producto (nombre o código)</span>
+        <div class="pick" id="pick-compra"></div>
+        <table class="cat" style="margin-top:12px">
+          <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Costo unit. ($)</th><th class="num">Importe</th><th>Costo actual → nuevo</th><th></th></tr></thead>
+          <tbody id="lineas"></tbody>
+        </table>
+        <p id="sin-lineas" class="ayuda">Aún no hay productos. Busca arriba, elige y captura cantidad y costo.</p>
+        <div class="total-compra" id="total">$0.00</div>
+        <div class="rejilla"><div class="ancho"><label for="c-notas">Notas (opcional)</label><input id="c-notas" type="text" maxlength="300" autocomplete="off"></div></div>
+        <p class="err" id="err-compra" role="alert"></p>
+        <div class="fila-btn"><button class="btn" id="registrar" type="button">Registrar compra</button></div>
+      </div>
+    </section>
+
+    <!-- HISTORIAL -->
+    <section id="sec-hist" hidden>
+      <div class="tarjeta"><div class="rejilla">
+        <div><label for="h-prov">Proveedor</label><select id="h-prov"></select></div>
+        <div><label for="h-estado">Estado</label><select id="h-estado"><option value="">Todos</option><option value="registrada">Registradas</option><option value="anulada">Anuladas</option></select></div>
+        <div><label for="h-desde">Desde</label><input id="h-desde" type="date"></div>
+        <div><label for="h-hasta">Hasta</label><input id="h-hasta" type="date"></div>
+        <div><button class="btn" id="h-buscar" type="button">Consultar</button></div>
+      </div></div>
+      <table class="cat"><thead><tr><th>#</th><th>Fecha</th><th>Proveedor</th><th>Folio</th><th class="num">Total</th><th>Capturó</th><th></th></tr></thead><tbody id="filas-hist"></tbody></table>
+      <div class="pie"><span id="h-info"></span><span><button class="btn sec peq" id="h-ant" type="button">← Anterior</button> <button class="btn sec peq" id="h-sig" type="button">Siguiente →</button></span></div>
+    </section>
+
+    <!-- PROVEEDORES -->
+    <section id="sec-prov" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><label class="check"><input type="checkbox" id="p-inactivos"> Mostrar desactivados</label><button class="btn" id="nuevo-prov" type="button">+ Nuevo proveedor</button></div>
+      <table class="cat"><thead><tr><th>Nombre</th><th>RFC</th><th>Estado</th><th></th></tr></thead><tbody id="filas-prov"></tbody></table>
+    </section>
+  </div>
+
+  <dialog id="dlg-prov">
+    <form id="form-prov" method="dialog" class="rejilla" autocomplete="off">
+      <h2 id="titulo-prov" class="ancho">Proveedor</h2>
+      <div class="ancho"><label for="pv-nombre">Nombre *</label><input id="pv-nombre" type="text" required minlength="2" maxlength="80"></div>
+      <div class="ancho"><label for="pv-rfc">RFC (opcional)</label><input id="pv-rfc" type="text" maxlength="13" style="text-transform:uppercase"></div>
+      <div class="ancho" id="fila-pv-activo"><label class="check"><input id="pv-activo" type="checkbox" checked> Activo</label></div>
+      <p class="err ancho" id="err-prov" role="alert"></p>
+      <div class="fila-btn ancho"><button type="button" class="btn sec" id="cancelar-prov">Cancelar</button><button type="submit" class="btn">Guardar</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-det"><div id="detalle"></div><div class="rejilla" id="bloque-anular" hidden><div class="ancho"><label for="a-motivo">Motivo de la anulación *</label><input id="a-motivo" type="text" maxlength="200" autocomplete="off"></div></div><p class="err" id="err-det" role="alert"></p>
+    <div class="fila-btn"><button class="btn sec" id="anular" type="button">Anular compra</button><button class="btn" id="cerrar-det" type="button">Cerrar</button></div></dialog>
+  <script type="module" src="/js/compras.js"></script>
+</body>
+</html>

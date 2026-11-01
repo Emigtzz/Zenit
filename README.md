@@ -51,6 +51,27 @@ Otras pantallas (solo dueño):
 - Inventario (ajustes y kárdex): <http://localhost:3000/inventario.html>
 - Usuarios: <http://localhost:3000/usuarios.html>
 - Cortes de caja: <http://localhost:3000/cortes.html>
+- Compras y proveedores: <http://localhost:3000/compras.html>
+
+## Compras y proveedores
+
+Solo el **dueño** (`/compras.html`): las compras manejan costos. Pestañas: *Nueva compra*, *Historial* y *Proveedores*.
+
+Una compra se captura con proveedor, folio de factura (opcional), fecha y los productos con **cantidad** y **costo unitario**; el total lo calcula el servidor. Al registrarla, **en una sola transacción**:
+
+1. se guarda la compra y su detalle;
+2. el stock **sube** y el kárdex registra un movimiento `compra` (referencia `compra:N`, nota con la factura);
+3. el **costo del producto se actualiza** al de esta compra;
+4. si marcaste *Pagada con efectivo del cajón*, se registra el **retiro en el corte de caja** (si no hay caja abierta o no alcanza el efectivo, no se guarda nada).
+
+Reglas que conviene conocer:
+
+- **El costo vigente es el de la compra más reciente _por fecha_**, no el de la última que se capturó. Si hoy capturas una factura de hace 10 días, el stock entra pero el costo no pisa uno más nuevo.
+- Al capturar, cada línea muestra *costo actual → nuevo (±%)* y avisa con ⚠ si el nuevo costo **iguala o supera el precio de venta** (sin ganancia). Al registrar, se listan los costos cambiados y los productos por revisar.
+- **No se puede capturar dos veces la misma factura** del mismo proveedor (otro proveedor, o sin folio, sí).
+- La fecha no puede ser futura. Un mismo producto no puede repetirse en la compra (junta las piezas).
+- **Anular** una compra (motivo obligatorio) revierte el stock con un movimiento `cancelacion` y regresa el costo al de la compra anterior; si no hay otra, al que tenía antes. No pisa un costo que corregiste a mano después. **No se puede anular si lo comprado ya se vendió** (el stock quedaría negativo): haz antes un conteo físico. Anular libera el folio para recapturar la factura correcta. Si la compra se pagó del cajón, el reembolso se registra a mano con `F6`.
+- Costos en pesos con centavos: un costo con fracciones de centavo (p. ej. $0.833 por pieza) se captura redondeado.
 
 ## Corte de caja
 
@@ -84,6 +105,7 @@ Todo el sistema pide iniciar sesión. En la pantalla de entrada se elige el nomb
 | Alta/edición/desactivación de catálogo y precios | ❌ | ✅ |
 | Ajustes de inventario y kárdex | ❌ | ✅ |
 | Gestionar usuarios | ❌ | ✅ |
+| Compras y proveedores | ❌ | ✅ |
 
 Contraseñas: **dueño** mínimo 8 caracteres; **cajero** mínimo 4 (puede ser un PIN). Se guardan con `scrypt` y sal propia, nunca en claro. Tras **5 intentos fallidos** el usuario se bloquea 1 minuto. Las sesiones duran 12 h de inactividad. Desactivar a alguien, cambiarle el rol o restablecerle la contraseña cierra sus sesiones abiertas. Siempre debe quedar al menos un dueño activo.
 
@@ -192,6 +214,8 @@ Todas las rutas excepto `/api/auth/estado`, `/api/auth/login` y `/api/auth/setup
 | `GET /api/ventas/:id`, `GET /api/ventas/:id/impresion`, `POST /api/ventas/:id/reimprimir` | Consulta y reimpresión |
 | `POST /api/inventario/ajustes` | `{producto_id, modo: entrada\|salida\|conteo, cantidad, motivo, nota}` |
 | `GET /api/inventario/kardex?producto_id=&tipo=&desde=&hasta=&pagina=` | Movimientos con saldo acumulado (fechas `AAAA-MM-DD`, hora local) |
+| `GET/POST /api/proveedores`, `PUT /api/proveedores/:id` | Proveedores (dueño) |
+| `POST /api/compras`, `GET /api/compras`, `GET /api/compras/:id`, `POST /api/compras/:id/anular`, `GET /api/compras/producto/:id` | Compras (dueño). El cuerpo: `{proveedor_id, folio_factura?, fecha?, pagar_de_caja?, items:[{producto_id, cantidad, costo_unitario}]}` en centavos |
 | `GET /api/caja/estado`, `POST /api/caja/abrir`, `GET /api/caja/resumen`, `POST /api/caja/movimientos`, `POST /api/caja/cerrar` | Turno de caja (cajero y dueño; el cajero recibe un resumen ciego) |
 | `GET /api/caja/cortes`, `GET /api/caja/cortes/:id`, `POST /api/caja/cortes/:id/imprimir` | Historial de cortes (dueño) |
 | `GET /api/inventario/stock-bajo` | `{total, por_nivel, productos[]}` con `nivel` y `faltante` |
@@ -210,7 +234,7 @@ Detalle y decisiones en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
 ## Roadmap
 
 1. ✅ Venta básica (este README)
-2. Inventario y control: ✅ kárdex, ajustes, stock bajo, usuarios y permisos, corte de caja · ⏳ compras manuales
+2. ✅ Inventario y control: kárdex, ajustes, stock bajo, usuarios y permisos, corte de caja y compras manuales
 3. Importación de facturas (XML CFDI)
 4. Estadísticas, sincronización a Supabase y PWA del dueño
 5. Puesta en marcha: catálogo real, etiquetas, respaldos y capacitación

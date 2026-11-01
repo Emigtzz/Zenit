@@ -15,3 +15,7 @@ CREATE UNIQUE INDEX ux_compra_folio ON compras(proveedor_id, folio_factura)
   WHERE folio_factura IS NOT NULL AND estado = 'registrada';
 CREATE INDEX idx_compras_fecha ON compras(fecha);
 CREATE INDEX idx_compradet_producto ON compra_detalle(producto_id);
+
+-- Costo que tenía el producto ANTES de esta compra: permite deshacer el cambio de costo al anular
+-- cuando no queda ninguna otra compra de referencia.
+ALTER TABLE compra_detalle ADD COLUMN costo_previo INTEGER;

@@ -169,11 +169,21 @@ test('anular libera el folio para volver a capturar la factura correcta', () => 
   assert.equal(costoDe(e.db, 1), 1050);
 });
 
-test('anular una compra única deja el costo como estaba (no hay otra compra de referencia)', () => {
+test('anular la ÚNICA compra de un producto restaura el costo que tenía antes', () => {
   const e = entorno();
   const r = e.compras.registrar(compra(e)); // costo 1000 -> 1100
+  assert.equal(costoDe(e.db, 1), 1100);
+  const a = e.compras.anular(r.compra.id, { motivo: 'error' });
+  assert.equal(costoDe(e.db, 1), 1000);
+  assert.deepEqual(a.cambios_costo.map((c) => [c.costo_anterior, c.costo_nuevo]), [[1100, 1000]]);
+});
+
+test('anular no pisa un costo que el dueño corrigió a mano después de la compra', () => {
+  const e = entorno();
+  const r = e.compras.registrar(compra(e)); // 1000 -> 1100
+  e.db.prepare('UPDATE productos SET costo = 1234 WHERE id = 1').run(); // corrección manual en el catálogo
   e.compras.anular(r.compra.id, { motivo: 'error' });
-  assert.equal(costoDe(e.db, 1), 1100); // sin compra vigente se respeta el costo actual; el dueño puede corregirlo en el catálogo
+  assert.equal(costoDe(e.db, 1), 1234);
 });
 
 test('anular se bloquea si lo comprado ya se vendió (stock insuficiente) y no cambia nada', () => {

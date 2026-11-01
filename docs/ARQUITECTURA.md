@@ -69,3 +69,13 @@ Navegador (public/)  →  routes  →  controllers  →  services  →  reposito
 - **Retiros acotados**: no se puede retirar más que el efectivo esperado en ese momento (verificado dentro de la transacción).
 - **Impresión desacoplada del cierre**: el cierre responde 200 aunque la impresora lance una excepción (hay prueba).
 - **Ventas por cajero** en el corte salen de `ventas.usuario_id` (fase de usuarios).
+
+## Fase 2 — Compras manuales
+
+- **Migración 005**: `proveedores.activo` y nombre único; `compras` gana usuario, estado (`registrada`/`anulada`), notas, `pagada_de_caja` y datos de anulación; `compra_detalle.costo_previo`.
+- **Una transacción** (`compraService.ejecutar`): compra + detalle + kárdex + stock + costo + (opcional) retiro de caja. El retiro reutiliza `corteService.registrarMovimiento`, que abre su propia `db.transaction`: better-sqlite3 la anida como *savepoint*, de modo que si el pago falla se deshace **toda** la compra.
+- **Costo vigente = compra registrada más reciente por `fecha`** (desempata `id`), y se recalcula (`sincronizarCosto`) en cada alta o anulación. Es idempotente y soporta facturas capturadas fuera de orden.
+- **Anulación**: no borra; marca `anulada` y genera movimientos `cancelacion` negativos. Se bloquea si el stock actual no alcanza para revertir (no fabrica stock negativo). El costo regresa a la compra vigente anterior, o a `costo_previo` si no hay otra y nadie lo editó mientras tanto.
+- **Folio único** por proveedor entre compras `registrada` (índice parcial): una anulada libera el folio. Nulo permitido varias veces.
+- **Índice de búsqueda**: guarda el costo del producto, así que se invalida tras registrar/anular; la pantalla además lee el producto fresco al elegirlo.
+- Base para la **fase 3**: `compras.archivo`, `proveedores.rfc` y la tabla `equivalencias_proveedor` ya están listas; la importación de XML solo tendrá que producir la misma entrada que esta captura manual (con la pantalla de revisión obligatoria).

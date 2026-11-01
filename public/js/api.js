@@ -31,6 +31,13 @@ export async function requerirDueno() {
 }
 
 export const api = {
+  proveedores: (todos = false) => pedir('GET', `/proveedores?incluir_inactivos=${todos ? 1 : 0}`),
+  crearProveedor: (d) => pedir('POST', '/proveedores', d),
+  actualizarProveedor: (id, d) => pedir('PUT', `/proveedores/${id}`, d),
+  registrarCompra: (d) => pedir('POST', '/compras', d),
+  compras: (f) => pedir('GET', '/compras?' + new URLSearchParams(Object.entries(f).filter(([, v]) => v !== '' && v != null))),
+  compra: (id) => pedir('GET', `/compras/${id}`),
+  anularCompra: (id, motivo) => pedir('POST', `/compras/${id}/anular`, { motivo }),
   estadoCaja: () => pedir('GET', '/caja/estado'),
   abrirCaja: (fondo_inicial) => pedir('POST', '/caja/abrir', { fondo_inicial }),
   resumenCaja: () => pedir('GET', '/caja/resumen'),
