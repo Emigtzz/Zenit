@@ -71,10 +71,20 @@ const kardexSchema = z.object({
   por_pagina: z.coerce.number().int().min(1).max(200).default(50),
 });
 
+const nombreUsuario = z.string().trim().min(2, 'Mínimo 2 letras').max(40);
+const contrasenaCampo = z.string({ error: 'Requerida' }).min(1, 'Requerida').max(100);
+const loginSchema = z.object({ usuario_id: z.number().int().positive(), contrasena: contrasenaCampo });
+const setupSchema = z.object({ nombre: nombreUsuario, contrasena: contrasenaCampo });
+const usuarioNuevoSchema = z.object({ nombre: nombreUsuario, rol: z.enum(['cajero', 'dueño']), contrasena: contrasenaCampo });
+const usuarioEditarSchema = z.object({ nombre: nombreUsuario, rol: z.enum(['cajero', 'dueño']), activo: z.boolean() });
+const restablecerSchema = z.object({ contrasena: contrasenaCampo });
+const cambioContrasenaSchema = z.object({ actual: contrasenaCampo, nueva: contrasenaCampo });
+
 const buscarSchema = z.object({ q: z.string().max(100).default('') });
 const listaProductosSchema = z.object({
   incluir_inactivos: z.enum(['0', '1']).default('0'),
   categoria: z.coerce.number().int().positive().optional(),
 });
 
-module.exports = { validar, categoriaSchema, productoSchema, ventaSchema, buscarSchema, listaProductosSchema, ajusteSchema, kardexSchema };
+module.exports = { validar, categoriaSchema, productoSchema, ventaSchema, buscarSchema, listaProductosSchema, ajusteSchema, kardexSchema,
+  loginSchema, setupSchema, usuarioNuevoSchema, usuarioEditarSchema, restablecerSchema, cambioContrasenaSchema };

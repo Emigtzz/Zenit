@@ -26,7 +26,7 @@ module.exports = function ventaController(ventas, impresora, config) {
       modo_impresora: config.impresora.modo,
     }),
     crear(req, res) {
-      const venta = ventas.crear(req.body); // síncrono y transaccional
+      const venta = ventas.crear(req.body, { usuarioId: req.usuario.id }); // síncrono y transaccional
       imprimirEnSegundoPlano(venta);
       res.status(201).json(venta);
     },

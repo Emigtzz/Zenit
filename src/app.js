@@ -10,6 +10,10 @@ const catalogoController = require('./controllers/catalogoController');
 const inventarioService = require('./services/inventarioService');
 const inventarioController = require('./controllers/inventarioController');
 const ventaController = require('./controllers/ventaController');
+const authService = require('./services/authService');
+const usuarioService = require('./services/usuarioService');
+const authController = require('./controllers/authController');
+const authMiddlewares = require('./middlewares/auth');
 const rutas = require('./routes');
 const { noEncontrada, manejarErrores } = require('./middlewares/errores');
 
@@ -19,11 +23,16 @@ function crearApp({ db, config, impresora }) {
   const catalogo = catalogoService(db, busqueda);
   const ventas = ventaService(db, { mayoreoPorcentaje: config.mayoreoPorcentaje });
   const imp = impresora || impresoraService(config);
+  const auth = authService(db);
+  const mw = authMiddlewares(auth);
 
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '100kb' }));
+  app.use('/api', mw.mismoOrigen, mw.cargarSesion);
   app.use('/api', rutas({
+    mw,
+    authCtrl: authController({ auth, usuarios: usuarioService(db), config, mw, vidaSesionMs: auth.VIDA_SESION_MS }),
     catalogoCtrl: catalogoController(catalogo, busqueda),
     ventaCtrl: ventaController(ventas, imp, config),
     inventarioCtrl: inventarioController(inventarioService(db), busqueda),

@@ -22,7 +22,7 @@ module.exports = function inventarioService(db) {
 
   // Leer el stock, escribir el movimiento y actualizar el stock van en UNA transacción:
   // si dos ajustes llegaran a la vez, o algo fallara a la mitad, el stock nunca queda sin su movimiento.
-  const ejecutar = db.transaction(({ producto_id, modo, cantidad, motivo, nota }) => {
+  const ejecutar = db.transaction(({ producto_id, modo, cantidad, motivo, nota }, usuarioId) => {
     const prod = productos.obtener(producto_id);
     if (!prod) throw new ErrorApp('El producto no existe', { status: 404, codigo: 'NO_ENCONTRADO' });
 
@@ -41,7 +41,7 @@ module.exports = function inventarioService(db) {
     const id = inventario.insertarMovimiento({
       producto_id, tipo: 'ajuste', cantidad: delta, referencia: `ajuste:${modo}`,
       motivo, nota: nota || null, fecha: new Date().toISOString(),
-      usuario_id: null, // fase 2 (usuarios): quién hizo el ajuste
+      usuario_id: usuarioId, // quién hizo el ajuste
     });
     productos.ajustarStock(producto_id, delta);
     return { movimiento_id: id, producto_id, nombre: prod.nombre, stock_anterior: prod.stock, diferencia: delta, stock_nuevo: nuevo };
@@ -49,11 +49,11 @@ module.exports = function inventarioService(db) {
 
   return {
     motivos: () => MOTIVOS,
-    ajustar(entrada) {
+    ajustar(entrada, { usuarioId = null } = {}) {
       if (entrada.motivo === 'otro' && !(entrada.nota && entrada.nota.trim().length >= 3)) {
         throw new ErrorApp('Con el motivo "Otro" debes explicar en la nota', { status: 422, codigo: 'NOTA_REQUERIDA' });
       }
-      return ejecutar(entrada);
+      return ejecutar(entrada, usuarioId);
     },
     kardex({ producto_id, tipo, desde, hasta, pagina = 1, por_pagina = 50 }) {
       // Los días vienen como "2026-11-01" en HORA LOCAL de la tienda; las fechas se guardan en UTC.

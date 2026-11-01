@@ -19,7 +19,7 @@ module.exports = function ventaRepository(db) {
                   VALUES (@producto_id, @tipo, @cantidad, @referencia, @fecha, @usuario_id)`).run(m);
     },
     obtener(id) {
-      const venta = db.prepare('SELECT * FROM ventas WHERE id = ?').get(id);
+      const venta = db.prepare(`SELECT v.*, u.nombre AS usuario_nombre FROM ventas v LEFT JOIN usuarios u ON u.id = v.usuario_id WHERE v.id = ?`).get(id);
       if (!venta) return undefined;
       venta.detalle = db.prepare(`SELECT d.producto_id, p.nombre, d.cantidad, d.precio_unitario, d.importe
                                   FROM venta_detalle d JOIN productos p ON p.id = d.producto_id

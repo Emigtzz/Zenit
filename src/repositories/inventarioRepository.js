@@ -20,8 +20,8 @@ module.exports = function inventarioRepository(db) {
         FROM (
           SELECT m.id, m.producto_id, p.nombre AS producto_nombre, m.tipo, m.cantidad,
                  SUM(m.cantidad) OVER (PARTITION BY m.producto_id ORDER BY m.id) AS saldo,
-                 m.motivo, m.nota, m.referencia, m.fecha, m.usuario_id
-          FROM movimientos_inventario m JOIN productos p ON p.id = m.producto_id ${dentro}
+                 m.motivo, m.nota, m.referencia, m.fecha, m.usuario_id, u.nombre AS usuario_nombre
+          FROM movimientos_inventario m JOIN productos p ON p.id = m.producto_id LEFT JOIN usuarios u ON u.id = m.usuario_id ${dentro}
         ) ${fuera}`;
       const params = { productoId, tipo, desde, hasta };
       for (const k of Object.keys(params)) if (params[k] === undefined) delete params[k];

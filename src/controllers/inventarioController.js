@@ -5,6 +5,6 @@ module.exports = function inventarioController(inventario) {
     kardex: (req, res) => res.json(inventario.kardex(req.query)),
     verificar: (_req, res) => res.json({ consistente: inventario.verificar().length === 0, productos: inventario.verificar() }),
     stockBajo: (_req, res) => res.json(inventario.stockBajo()),
-    ajustar: (req, res) => res.status(201).json(inventario.ajustar(req.body)),
+    ajustar: (req, res) => res.status(201).json(inventario.ajustar(req.body, { usuarioId: req.usuario.id })),
   };
 };

@@ -13,7 +13,7 @@ module.exports = function ventaService(db, { mayoreoPorcentaje = 5 } = {}) {
 
   // db.transaction envuelve la función en BEGIN ... COMMIT. Si la función LANZA una excepción,
   // better-sqlite3 hace ROLLBACK automático y relanza el error: no queda nada a medias.
-  const ejecutar = db.transaction((entrada) => {
+  const ejecutar = db.transaction((entrada, usuarioId) => {
     // 1. Unir líneas repetidas del mismo producto (defensa extra: el frontend ya las suma).
     const cantidades = new Map();
     for (const it of entrada.items) {
@@ -45,7 +45,6 @@ module.exports = function ventaService(db, { mayoreoPorcentaje = 5 } = {}) {
 
     // 4. Escribir todo. Cualquier fallo desde aquí deshace TODO, incluidos los descuentos de stock.
     const fecha = new Date().toISOString();
-    const usuarioId = null; // fase 2: usuario autenticado
     const ventaId = ventas.insertarVenta({ fecha, usuario_id: usuarioId, ...totales, cambio: resolucion.cambio });
     for (const l of lineas) {
       ventas.insertarDetalle(ventaId, l);
@@ -65,8 +64,8 @@ module.exports = function ventaService(db, { mayoreoPorcentaje = 5 } = {}) {
   });
 
   return {
-    crear(entrada) {
-      const { ventaId } = ejecutar(entrada);
+    crear(entrada, { usuarioId = null } = {}) {
+      const { ventaId } = ejecutar(entrada, usuarioId);
       return this.obtener(ventaId);
     },
     obtener(id) {

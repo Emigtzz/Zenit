@@ -30,6 +30,7 @@ function construirDocumento(venta, negocio, columnas = 48) {
   if (negocio.direccion) envolver(negocio.direccion, columnas).forEach((t) => doc.push({ tipo: 'centro', texto: t }));
   doc.push({ tipo: 'linea' });
   doc.push({ tipo: 'izqDer', izq: `Folio: ${String(venta.id).padStart(6, '0')}`, der: formatearFecha(venta.fecha) });
+  if (venta.usuario_nombre) doc.push({ tipo: 'texto', texto: `Atendió: ${venta.usuario_nombre}` });
   doc.push({ tipo: 'linea' });
 
   for (const d of venta.detalle) {
