@@ -127,3 +127,16 @@ Detalle y decisiones en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
 3. Importación de facturas (XML CFDI)
 4. Estadísticas, sincronización a Supabase y PWA del dueño
 5. Puesta en marcha: catálogo real, etiquetas, respaldos y capacitación
+
+## Grafo de conocimiento del código (Graphify)
+
+El proyecto usa [Graphify](https://github.com/graphify-labs/graphify) para mapear el código (funciones, módulos y sus relaciones). Se versionan `graphify-out/graph.json` y `graphify-out/GRAPH_REPORT.md`.
+
+```bash
+pip install graphifyy          # el paquete de PyPI se llama "graphifyy" (doble y)
+graphify update .              # reconstruye el grafo solo con AST: sin LLM y sin costo
+graphify explain "crearApp"    # explica un nodo y sus vecinos
+graphify path "crearApp" "ventaService"
+```
+
+Vuelve a ejecutar `graphify update .` después de cambiar código (o instala su hook de git con `graphify hook install`).
