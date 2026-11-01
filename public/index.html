@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Caja · Zenit POS</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="barra">
+    <h1 id="negocio">Zenit POS</h1>
+    <nav class="atajos" aria-label="Atajos de teclado">
+      <span><kbd>F2</kbd> Buscar</span>
+      <span><kbd>F4</kbd> Cobrar</span>
+      <span><kbd>F8</kbd> Mayoreo</span>
+      <span><kbd>↑↓</kbd> Seleccionar</span>
+      <span><kbd>+</kbd><kbd>−</kbd> Cantidad</span>
+      <span><kbd>Supr</kbd> Quitar</span>
+      <span><kbd>Esc</kbd> Cancelar venta</span>
+    </nav>
+    <a class="enlace" href="/catalogo.html" tabindex="-1">Catálogo</a>
+    <div id="reloj" aria-hidden="true"></div>
+  </header>
+
+  <div id="aviso" role="status" aria-live="polite" hidden></div>
+
+  <main class="caja">
+    <section class="ticket" aria-label="Venta en curso">
+      <label for="codigo" class="sr">Código de barras o código corto</label>
+      <input id="codigo" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+             placeholder="Escanea o escribe un código (ej. 101, o 3*101 para 3 piezas) y Enter" autofocus>
+      <div class="tabla-wrap">
+        <table>
+          <thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Importe</th></tr></thead>
+          <tbody id="lineas"></tbody>
+        </table>
+        <p id="vacio" class="vacio">Sin productos. Escanea un código, pulsa <kbd>F2</kbd> para buscar o toca un botón rápido.</p>
+      </div>
+      <div class="totales">
+        <div><span>Piezas</span><strong id="t-piezas">0</strong></div>
+        <div><span>Subtotal</span><strong id="t-subtotal">$0.00</strong></div>
+        <div id="fila-desc" hidden><span>Mayoreo <b id="t-pct"></b></span><strong id="t-desc">-$0.00</strong></div>
+        <div class="gran"><span>TOTAL</span><strong id="t-total">$0.00</strong></div>
+      </div>
+    </section>
+
+    <aside class="rapidos" aria-label="Botones rápidos">
+      <h2>Sin código de barras</h2>
+      <div id="chips" class="chips"></div>
+      <div id="botones" class="botones"></div>
+    </aside>
+  </main>
+
+  <div id="modal-raiz"></div>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

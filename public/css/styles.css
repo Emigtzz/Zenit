@@ -1,0 +1,76 @@
+:root {
+  --fondo: #f1f5f9; --panel: #fff; --texto: #0f172a; --suave: #64748b; --borde: #e2e8f0;
+  --acento: #4f46e5; --acento-t: #fff; --ok: #16a34a; --error: #dc2626; --aviso: #d97706; --sel: #e0e7ff;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --fondo: #0b1220; --panel: #131c2e; --texto: #e5e7eb; --suave: #94a3b8; --borde: #243049; --sel: #26307a; }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { font: 16px/1.4 system-ui, "Segoe UI", sans-serif; background: var(--fondo); color: var(--texto); display: flex; flex-direction: column; overflow: hidden; }
+kbd { font: 600 12px ui-monospace, monospace; background: var(--borde); border-radius: 4px; padding: 1px 6px; margin-right: 4px; }
+.sr { position: absolute; left: -9999px; }
+
+.barra { display: flex; align-items: center; gap: 20px; padding: 8px 16px; background: var(--panel); border-bottom: 1px solid var(--borde); }
+.barra h1 { font-size: 20px; margin: 0; }
+.atajos { display: flex; gap: 14px; flex: 1; flex-wrap: wrap; font-size: 13px; color: var(--suave); }
+.enlace { color: var(--suave); font-size: 13px; }
+#reloj { font-variant-numeric: tabular-nums; color: var(--suave); }
+
+#aviso { margin: 8px 16px 0; padding: 10px 14px; border-radius: 8px; font-weight: 600; background: var(--aviso); color: #fff; }
+#aviso.error { background: var(--error); } #aviso.ok { background: var(--ok); }
+
+.caja { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 12px; padding: 12px 16px; }
+.ticket, .rapidos { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; min-height: 0; }
+
+#codigo { width: 100%; font-size: 22px; padding: 12px 14px; border: 2px solid var(--acento); border-radius: 10px; background: var(--fondo); color: var(--texto); }
+#codigo:focus { outline: 3px solid color-mix(in srgb, var(--acento) 35%, transparent); }
+
+.tabla-wrap { flex: 1; overflow: auto; margin: 10px 0; position: relative; }
+table { width: 100%; border-collapse: collapse; font-size: 18px; }
+th { text-align: left; font-size: 12px; text-transform: uppercase; color: var(--suave); position: sticky; top: 0; background: var(--panel); padding: 6px 8px; }
+td { padding: 8px; border-top: 1px solid var(--borde); }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.sel td { background: var(--sel); }
+tr.flash td { animation: flash .5s; }
+@keyframes flash { from { background: #fde68a; } }
+.vacio { color: var(--suave); text-align: center; margin-top: 40px; }
+
+.totales { border-top: 2px solid var(--borde); padding-top: 8px; }
+.totales div { display: flex; justify-content: space-between; font-size: 17px; padding: 2px 0; }
+.totales .gran { font-size: 34px; font-weight: 800; }
+#fila-desc { color: var(--ok); }
+
+.rapidos h2 { font-size: 14px; margin: 0 0 8px; color: var(--suave); text-transform: uppercase; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.chip { border: 2px solid var(--c, var(--borde)); background: transparent; color: var(--texto); border-radius: 999px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 13px; }
+.chip.on { background: var(--c, var(--acento)); color: #fff; }
+.botones { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; overflow: auto; align-content: start; }
+.boton { background: var(--c); color: #fff; border: 0; border-radius: 10px; padding: 12px 8px; min-height: 76px; cursor: pointer; font: inherit; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,.35); display: flex; flex-direction: column; justify-content: space-between; text-align: left; }
+.boton small { font-weight: 500; opacity: .95; }
+.boton:active { transform: scale(.97); }
+
+/* Modales */
+.velo { position: fixed; inset: 0; background: rgba(2, 6, 23, .6); display: grid; place-items: center; z-index: 10; padding: 16px; }
+.modal { background: var(--panel); border-radius: 14px; padding: 20px; width: min(640px, 100%); max-height: 92vh; overflow: auto; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+.modal h2 { margin: 0 0 12px; }
+.modal input[type=text] { width: 100%; font-size: 24px; padding: 10px 12px; border: 2px solid var(--borde); border-radius: 10px; background: var(--fondo); color: var(--texto); }
+.modal input:focus { border-color: var(--acento); outline: none; }
+.ayuda { color: var(--suave); font-size: 13px; margin-top: 10px; }
+.resultados { list-style: none; margin: 10px 0 0; padding: 0; max-height: 50vh; overflow: auto; }
+.resultados li { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 18px; }
+.resultados li.sel { background: var(--sel); }
+.resultados .cat { font-size: 12px; color: var(--suave); display: block; }
+
+.metodos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+.metodo { border: 2px solid var(--borde); background: transparent; color: var(--texto); border-radius: 10px; padding: 10px 4px; font: inherit; font-weight: 700; cursor: pointer; }
+.metodo.on { background: var(--acento); color: var(--acento-t); border-color: var(--acento); }
+.cobro-total { font-size: 44px; font-weight: 800; text-align: center; margin: 4px 0; }
+.campo { margin: 10px 0; } .campo label { display: block; font-size: 13px; color: var(--suave); margin-bottom: 4px; }
+.cambio { text-align: center; font-size: 30px; font-weight: 800; margin-top: 12px; }
+.cambio.ok { color: var(--ok); } .cambio.falta { color: var(--error); }
+.pill { display: inline-block; background: var(--ok); color: #fff; font-size: 13px; padding: 2px 10px; border-radius: 999px; margin-left: 8px; vertical-align: middle; }
+.exito { text-align: center; } .exito .grande { font-size: 56px; font-weight: 800; color: var(--ok); }
+.btn { border: 0; border-radius: 10px; padding: 10px 18px; font: inherit; font-weight: 700; background: var(--acento); color: var(--acento-t); cursor: pointer; }
+.btn.sec { background: var(--borde); color: var(--texto); }
+.fila-btn { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
