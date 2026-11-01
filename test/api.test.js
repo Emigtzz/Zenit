@@ -20,7 +20,7 @@ async function crearUsuario(db, nombre, rol, contrasena) {
 
 // Levanta la app con una base en memoria. Por defecto las peticiones van con la sesión de un dueño ("Ana");
 // `como(rol)` abre sesión REAL (POST /auth/login) con otro usuario para probar permisos.
-async function levantar({ sinSesion = false } = {}) {
+async function levantar({ sinSesion = false, iaServicio } = {}) {
   const db = crearBaseDePrueba();
   const impresiones = [];
   const cortesImpresos = [];
@@ -28,7 +28,8 @@ async function levantar({ sinSesion = false } = {}) {
     imprimirVenta: async (v) => { impresiones.push(v); return { impreso: true }; },
     imprimirCorte: async (d) => { cortesImpresos.push(d); return { impreso: true }; },
   };
-  const servidor = crearApp({ db, config, impresora }).listen(0, '127.0.0.1');
+  const carpetaFacturas = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'zenit-api-fact-'));
+  const servidor = crearApp({ db, config: { ...config, carpetaFacturas, ia: { apiKey: '' } }, impresora, iaServicio }).listen(0, '127.0.0.1');
   await new Promise((r) => servidor.once('listening', r));
   const base = `http://127.0.0.1:${servidor.address().port}/api`;
 
@@ -47,13 +48,19 @@ async function levantar({ sinSesion = false } = {}) {
     assert.equal(r.status, 200);
     return { id: Number(id), cookie: r.setCookie.split(';')[0] };
   };
+  // Subida CRUDA de un archivo (así lo hace la pantalla): el cuerpo ES el archivo; el nombre va en una cabecera.
+  const subir = async (buffer, nombre, { cookie, headers = {} } = {}) => {
+    const res = await fetch(base + '/importaciones', { method: 'POST', headers: { 'content-type': 'application/octet-stream', 'x-nombre-archivo': encodeURIComponent(nombre), ...(cookie ? { cookie } : {}), ...headers }, body: buffer });
+    const texto = await res.text();
+    return { status: res.status, json: texto ? JSON.parse(texto) : null };
+  };
   const dueno = sinSesion ? null : await entrar('Ana', 'dueño', 'contraseña-larga');
   const pedir = (m, ruta, cuerpo) => crudo(m, ruta, cuerpo, { cookie: dueno?.cookie });
   const como = async (nombre, rol, contrasena = '4321') => {
     const u = await entrar(nombre, rol, contrasena);
     return Object.assign((m, ruta, cuerpo) => crudo(m, ruta, cuerpo, { cookie: u.cookie }), { id: u.id });
   };
-  return { db, pedir, crudo, como, dueno, impresiones, cortesImpresos, host: `127.0.0.1:${servidor.address().port}`, cerrar: () => servidor.close() };
+  return { db, pedir, crudo, como, dueno, subir, base, impresiones, cortesImpresos, host: `127.0.0.1:${servidor.address().port}`, cerrar: () => servidor.close() };
 }
 
 test('GET /productos/codigo/:codigo resuelve barras y código corto; 404 si no existe', async () => {
@@ -499,5 +506,110 @@ test('compra pagada de la caja por HTTP: aparece como retiro en el corte; sin ef
     await s.pedir('POST', '/caja/movimientos', { tipo: 'ingreso', monto: 5000, motivo: 'Fondo extra' });
     assert.equal((await s.pedir('POST', '/compras', { proveedor_id: prov, items, pagar_de_caja: true })).status, 201);
     assert.equal((await s.pedir('GET', '/caja/resumen')).json.efectivo_esperado, 3000);
+  } finally { s.cerrar(); }
+});
+
+
+// ================= Importación de facturas =================
+const { cfdi: cfdiXml, UUID_BASE: UUID_PRUEBA } = require('./cfdi-fixtures');
+
+test('importación por HTTP: subir XML → revisar → confirmar → compra, stock, costo y equivalencia aprendida', async () => {
+  const s = await levantar();
+  try {
+    const sube = await s.subir(Buffer.from(cfdiXml()), 'Factura Sol 1234.xml', { cookie: s.dueno.cookie });
+    assert.equal(sube.status, 201);
+    assert.equal(sube.json.estado, 'pendiente');
+    assert.equal(sube.json.factura.lineas[0].candidatos[0].nombre, 'Refresco 600ml');
+    assert.equal(stockDe(s.db, 1), 10); // un borrador no mueve nada
+    const id = sube.json.id;
+
+    assert.equal((await s.pedir('GET', '/importaciones?estado=pendiente')).json.length, 1);
+    assert.equal((await s.pedir('GET', `/importaciones/${id}`)).json.factura.emisor.rfc, 'DSO010203AB4');
+    assert.equal((await s.pedir('GET', '/importaciones/config')).json.ia_disponible, false);
+
+    const orig = await fetch(`${s.base}/importaciones/${id}/archivo`, { headers: { cookie: s.dueno.cookie } });
+    assert.equal(orig.status, 200);
+    assert.match(orig.headers.get('content-type'), /text\/plain/);   // el XML se sirve como texto, no se interpreta
+    assert.equal(orig.headers.get('x-content-type-options'), 'nosniff');
+
+    const conf = await s.pedir('POST', `/importaciones/${id}/confirmar`, {
+      nuevo_proveedor: { nombre: 'Distribuidora Sol', rfc: 'dso010203ab4' }, folio_factura: 'A-1234', fecha: '2026-10-28',
+      items: [{ linea: 0, producto_id: 1, cantidad: 48, costo_unitario: 2417, factor: 24 }],
+    });
+    assert.equal(conf.status, 201);
+    assert.equal(conf.json.compra.uuid_cfdi, `${UUID_PRUEBA}0001`);
+    assert.equal(conf.json.equivalencias_guardadas, 1);
+    assert.equal(stockDe(s.db, 1), 58);
+    assert.equal(s.db.prepare('SELECT costo FROM productos WHERE id = 1').get().costo, 2417);
+
+    const eq = (await s.pedir('GET', '/equivalencias')).json;
+    assert.deepEqual([eq[0].clave_proveedor, eq[0].factor, eq[0].producto_nombre], ['REF600', 24, 'Refresco 600ml']);
+    assert.equal((await s.pedir('POST', `/importaciones/${id}/confirmar`, { proveedor_id: 1, items: [{ producto_id: 1, cantidad: 1, costo_unitario: 100 }] })).json.error.codigo, 'YA_RESUELTA');
+    assert.equal((await s.pedir('DELETE', `/equivalencias?proveedor_id=${eq[0].proveedor_id}&clave=REF600`)).status, 204);
+    assert.equal((await s.pedir('GET', '/equivalencias')).json.length, 0);
+  } finally { s.cerrar(); }
+});
+
+test('importación: archivo que no es XML/PDF → 415; sobre 8 MB → 413; repetido → 409; PDF sin clave de IA → 503 claro', async () => {
+  const s = await levantar();
+  try {
+    const c = { cookie: s.dueno.cookie };
+    assert.equal((await s.subir(Buffer.from('hola'), 'a.xml', c)).status, 415);
+    assert.equal((await s.subir(Buffer.alloc(0), 'a.xml', c)).status, 400);
+    const grande = await s.subir(Buffer.alloc(9 * 1024 * 1024, 0x20), 'a.xml', c);
+    assert.equal(grande.status, 413);
+    assert.equal(grande.json.error.codigo, 'ARCHIVO_GRANDE');
+    assert.equal((await s.subir(Buffer.from(cfdiXml()), 'a.xml', c)).status, 201);
+    assert.equal((await s.subir(Buffer.from(cfdiXml()), 'a.xml', c)).json.error.codigo, 'ARCHIVO_REPETIDO');
+    const pdf = await s.subir(Buffer.from('%PDF-1.4\nx\n%%EOF'), 'f.pdf', c);
+    assert.equal(pdf.status, 503);
+    assert.equal(pdf.json.error.codigo, 'IA_NO_CONFIGURADA');
+    assert.match(pdf.json.error.mensaje, /XML/);
+    assert.equal(s.db.prepare('SELECT COUNT(*) n FROM importaciones').get().n, 1); // el fallido no deja borrador
+  } finally { s.cerrar(); }
+});
+
+test('importación de PDF por HTTP con un extractor simulado', async () => {
+  const factura = { fuente: 'pdf', uuid: null, folio_factura: 'P-1', fecha: '2026-10-28', emisor: { rfc: null, nombre: 'Bodega Norte' }, total: 5000, subtotal: 5000,
+    lineas: [{ indice: 0, no_identificacion: null, clave_proveedor: 'desc:galletas', descripcion: 'Galletas', cantidad: 5, unidad: 'Paq', importe_sin_impuestos: 5000, impuestos: 0, importe_con_impuestos: 5000 }], advertencias: ['Datos leídos con IA'] };
+  const s = await levantar({ iaServicio: { disponible: () => true, extraer: async () => factura } });
+  try {
+    const r = await s.subir(Buffer.from('%PDF-1.4\nx\n%%EOF'), 'f.pdf', { cookie: s.dueno.cookie });
+    assert.equal(r.status, 201);
+    assert.equal(r.json.fuente, 'pdf');
+    assert.equal(r.json.factura.lineas[0].candidatos[0].nombre, 'Galletas');
+    const orig = await fetch(`${s.base}/importaciones/${r.json.id}/archivo`, { headers: { cookie: s.dueno.cookie } });
+    assert.match(orig.headers.get('content-type'), /application\/pdf/);
+  } finally { s.cerrar(); }
+});
+
+test('importación: validaciones de la confirmación (piezas decimales, costo 0, sin renglones, factor 0)', async () => {
+  const s = await levantar();
+  try {
+    const id = (await s.subir(Buffer.from(cfdiXml()), 'a.xml', { cookie: s.dueno.cookie })).json.id;
+    const base = { proveedor_id: 1 };
+    const item = { producto_id: 1, cantidad: 1, costo_unitario: 100 };
+    for (const malo of [{ ...item, cantidad: 1.5 }, { ...item, costo_unitario: 0 }, { ...item, factor: 0 }, { ...item, cantidad: -2 }]) {
+      assert.equal((await s.pedir('POST', `/importaciones/${id}/confirmar`, { ...base, items: [malo] })).status, 400);
+    }
+    assert.equal((await s.pedir('POST', `/importaciones/${id}/confirmar`, { ...base, items: [] })).status, 400);
+    assert.equal(s.db.prepare('SELECT COUNT(*) n FROM compras').get().n, 0);
+  } finally { s.cerrar(); }
+});
+
+test('importación: descartar borra el borrador; es solo del dueño y exige sesión; rechaza Origin ajeno', async () => {
+  const s = await levantar();
+  try {
+    const id = (await s.subir(Buffer.from(cfdiXml()), 'a.xml', { cookie: s.dueno.cookie })).json.id;
+    const caj = await s.como('Beto', 'cajero');
+    for (const [m, r] of [['GET', '/importaciones'], ['GET', `/importaciones/${id}`], ['GET', `/importaciones/${id}/archivo`], ['POST', `/importaciones/${id}/descartar`], ['GET', '/equivalencias'], ['GET', '/importaciones/config']]) {
+      assert.equal((await caj(m, r)).status, 403, `${m} ${r}`);
+    }
+    assert.equal((await caj('POST', `/importaciones/${id}/confirmar`, { proveedor_id: 1, items: [{ producto_id: 1, cantidad: 1, costo_unitario: 100 }] })).status, 403);
+    assert.equal((await s.subir(Buffer.from(cfdiXml({ uuid: `${UUID_PRUEBA}0777` })), 'b.xml', {})).status, 401);
+    assert.equal((await s.subir(Buffer.from(cfdiXml({ uuid: `${UUID_PRUEBA}0777` })), 'b.xml', { cookie: s.dueno.cookie, headers: { origin: 'http://sitio-malo.example' } })).status, 403);
+    assert.equal((await s.pedir('POST', `/importaciones/${id}/descartar`)).status, 204);
+    assert.equal((await s.pedir('GET', `/importaciones/${id}`)).json.estado, 'descartada');
+    assert.equal((await s.pedir('POST', `/importaciones/${id}/descartar`)).json.error.codigo, 'YA_RESUELTA');
   } finally { s.cerrar(); }
 });

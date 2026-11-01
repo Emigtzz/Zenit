@@ -123,6 +123,24 @@ const listaComprasSchema = z.object({
 });
 const listaProveedoresSchema = z.object({ incluir_inactivos: z.enum(['0', '1']).default('0') });
 
+const confirmarImportacionSchema = z.object({
+  proveedor_id: z.number().int().positive().optional(),
+  nuevo_proveedor: z.object({ nombre: proveedorSchema.shape.nombre, rfc: proveedorSchema.shape.rfc }).optional(),
+  folio_factura: textoNullable(40),
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato AAAA-MM-DD').optional(),
+  notas: textoNullable(300),
+  pagar_de_caja: z.boolean().default(false),
+  items: z.array(z.object({
+    linea: z.number().int().min(0).max(1000).optional(),    // renglón de la factura de donde viene (para aprender la equivalencia)
+    producto_id: z.number().int().positive(),
+    cantidad: z.number({ error: 'Debe ser un número' }).int('Solo piezas enteras').positive('Debe ser mayor a 0').max(100000),   // PIEZAS
+    costo_unitario: z.number({ error: 'Debe ser un número' }).int('Debe ser entero en centavos').positive('El costo debe ser mayor a 0').max(100_000_000), // por pieza
+    factor: z.number().int().min(1, 'Mínimo 1').max(100000).default(1),            // piezas por unidad facturada
+  })).min(1, 'No hay renglones para registrar').max(300),
+});
+const listaImportacionesSchema = z.object({ estado: z.enum(['pendiente', 'confirmada', 'descartada']).optional() });
+const equivalenciaQuerySchema = z.object({ proveedor_id: z.coerce.number().int().positive().optional(), clave: z.string().min(1).max(200).optional() });
+
 const buscarSchema = z.object({ q: z.string().max(100).default('') });
 const listaProductosSchema = z.object({
   incluir_inactivos: z.enum(['0', '1']).default('0'),
@@ -130,6 +148,7 @@ const listaProductosSchema = z.object({
 });
 
 module.exports = { validar, categoriaSchema, productoSchema, ventaSchema, buscarSchema, listaProductosSchema, ajusteSchema, kardexSchema,
+  confirmarImportacionSchema, listaImportacionesSchema, equivalenciaQuerySchema,
   proveedorSchema, compraSchema, anularCompraSchema, listaComprasSchema, listaProveedoresSchema,
   abrirCajaSchema, movimientoCajaSchema, cerrarCajaSchema, listaCortesSchema,
   loginSchema, setupSchema, usuarioNuevoSchema, usuarioEditarSchema, restablecerSchema, cambioContrasenaSchema };

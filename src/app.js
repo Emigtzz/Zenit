@@ -19,17 +19,26 @@ const cajaController = require('./controllers/cajaController');
 const compraService = require('./services/compraService');
 const proveedorService = require('./services/proveedorService');
 const compraController = require('./controllers/compraController');
+const facturaIA = require('./services/facturaIA');
+const importacionService = require('./services/importacionService');
+const importacionController = require('./controllers/importacionController');
 const rutas = require('./routes');
 const { noEncontrada, manejarErrores } = require('./middlewares/errores');
 
 // Fábrica: recibe db y config, así las pruebas crean una app con base en memoria.
-function crearApp({ db, config, impresora }) {
+function crearApp({ db, config, impresora, iaServicio }) {
   const busqueda = busquedaService(productoRepository(db));
   const catalogo = catalogoService(db, busqueda);
   const ventas = ventaService(db, { mayoreoPorcentaje: config.mayoreoPorcentaje });
   const imp = impresora || impresoraService(config);
   const auth = authService(db);
   const mw = authMiddlewares(auth);
+  const proveedores = proveedorService(db);
+  const compras = compraService(db, busqueda);
+  const importaciones = importacionService(db, {
+    config: { carpetaFacturas: config.carpetaFacturas || require('node:path').join(config.raiz, 'data', 'facturas'), costoIncluyeImpuestos: config.costoIncluyeImpuestos !== false },
+    ia: iaServicio || facturaIA({ apiKey: config.ia?.apiKey, modelo: config.ia?.modelo }), busqueda, compras, proveedores,
+  });
 
   const app = express();
   app.disable('x-powered-by');
@@ -38,7 +47,8 @@ function crearApp({ db, config, impresora }) {
   app.use('/api', rutas({
     mw,
     cajaCtrl: cajaController(corteService(db), imp),
-    compraCtrl: compraController(compraService(db, busqueda), proveedorService(db)),
+    compraCtrl: compraController(compras, proveedores),
+    importacionCtrl: importacionController(importaciones, { costoIncluyeImpuestos: config.costoIncluyeImpuestos !== false }),
     authCtrl: authController({ auth, usuarios: usuarioService(db), config, mw, vidaSesionMs: auth.VIDA_SESION_MS }),
     catalogoCtrl: catalogoController(catalogo, busqueda),
     ventaCtrl: ventaController(ventas, imp, config),

@@ -13,6 +13,9 @@ function manejarErrores(err, _req, res, _next) {
   if (err && err.type === 'entity.parse.failed') {
     return res.status(400).json({ error: { codigo: 'JSON_INVALIDO', mensaje: 'El cuerpo no es JSON válido' } });
   }
+  if (err && err.type === 'entity.too.large') {
+    return res.status(413).json({ error: { codigo: 'ARCHIVO_GRANDE', mensaje: 'El archivo es demasiado grande (máximo 8 MB)' } });
+  }
   console.error('[error]', err);
   res.status(500).json({ error: { codigo: 'ERROR_INTERNO', mensaje: 'Error interno del servidor' } });
 }

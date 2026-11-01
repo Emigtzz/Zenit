@@ -1,5 +1,6 @@
 'use strict';
-const { Router } = require('express');
+const express = require('express');
+const { Router } = express;
 const v = require('../middlewares/validar');
 
 // Rutas = tabla "URL -> sesión/rol -> validación -> controlador". Nada más.
@@ -7,7 +8,7 @@ const v = require('../middlewares/validar');
 //   público     : /auth/estado, /auth/login, /auth/setup
 //   cajero+dueño: vender, consultar catálogo (sin costos), stock bajo, su propia contraseña
 //   solo dueño  : escribir catálogo, ajustes y kárdex, usuarios
-module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl: ic, authCtrl: ac, cajaCtrl: cc, compraCtrl: kc, mw }) {
+module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl: ic, authCtrl: ac, cajaCtrl: cc, compraCtrl: kc, importacionCtrl: mc, mw }) {
   const r = Router();
   const dueno = mw.requerirRol('dueño');
 
@@ -59,6 +60,17 @@ module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl
   r.get('/compras/producto/:id', dueno, kc.historialProducto);
   r.get('/compras/:id', dueno, kc.obtener);
   r.post('/compras/:id/anular', dueno, v.validar(v.anularCompraSchema), kc.anular);
+
+  // Importación de facturas (solo dueño). El archivo viaja CRUDO en el cuerpo (máx. 8 MB); nada se registra hasta confirmar.
+  r.get('/importaciones/config', dueno, mc.config);
+  r.post('/importaciones', dueno, express.raw({ type: () => true, limit: '8mb' }), mc.crear);
+  r.get('/importaciones', dueno, v.validar(v.listaImportacionesSchema, 'query'), mc.listar);
+  r.get('/importaciones/:id', dueno, mc.obtener);
+  r.get('/importaciones/:id/archivo', dueno, mc.archivo);
+  r.post('/importaciones/:id/confirmar', dueno, v.validar(v.confirmarImportacionSchema), mc.confirmar);
+  r.post('/importaciones/:id/descartar', dueno, mc.descartar);
+  r.get('/equivalencias', dueno, v.validar(v.equivalenciaQuerySchema, 'query'), mc.listarEquivalencias);
+  r.delete('/equivalencias', dueno, v.validar(v.equivalenciaQuerySchema, 'query'), mc.borrarEquivalencia);
 
   // Caja: cualquier usuario puede abrir, mover efectivo y cerrar (el cajero hace su corte a ciegas).
   // El historial y el detalle completo son del dueño.
