@@ -117,3 +117,35 @@ test('verificar detecta stock que no coincide con el kárdex', () => {
   assert.equal(r.length, 1);
   assert.deepEqual([r[0].id, r[0].stock, r[0].esperado], [2, 99, 5]);
 });
+
+test('stock bajo: clasifica negativo, agotado y bajo; ordena por gravedad; ignora sin mínimo y desactivados', () => {
+  const db = crearBaseDePrueba();
+  db.exec('DELETE FROM productos');
+  const ins = db.prepare('INSERT INTO productos (nombre, categoria_id, precio, stock, stock_minimo, activo) VALUES (?, 1, 100, ?, ?, ?)');
+  ins.run('Bajo cerca', 5, 6, 1);      // 5 <= 6 -> bajo
+  ins.run('Bajo justo', 6, 6, 1);      // igual al mínimo -> bajo (<=)
+  ins.run('Bajo grave', 1, 10, 1);     // 10% del mínimo -> bajo, antes que los otros bajos
+  ins.run('Agotado', 0, 4, 1);
+  ins.run('Negativo', -3, 4, 1);
+  ins.run('Suficiente', 7, 6, 1);      // arriba del mínimo -> no sale
+  ins.run('Sin mínimo en cero', 0, 0, 1);  // mínimo 0 = no definido -> no sale
+  ins.run('Sin mínimo negativo', -1, 0, 1); // pero negativo siempre sale
+  ins.run('Desactivado bajo', 0, 5, 0);    // inactivo -> no sale
+  const r = inventarioService(db).stockBajo();
+  assert.deepEqual(r.productos.map((p) => p.nombre), ['Negativo', 'Sin mínimo negativo', 'Agotado', 'Bajo grave', 'Bajo cerca', 'Bajo justo']);
+  assert.deepEqual(r.por_nivel, { negativo: 2, agotado: 1, bajo: 3 });
+  assert.equal(r.total, 6);
+  assert.equal(r.productos.find((p) => p.nombre === 'Agotado').faltante, 4);
+  assert.equal(r.productos.find((p) => p.nombre === 'Bajo justo').faltante, 0);
+});
+
+test('stock bajo se actualiza solo: una venta que cruza el mínimo lo hace aparecer', () => {
+  const db = baseConKardex();
+  db.prepare('UPDATE productos SET stock_minimo = 8 WHERE id = 1').run(); // stock 10, mínimo 8
+  const svc = inventarioService(db);
+  assert.equal(svc.stockBajo().total, 0);
+  ventaService(db).crear({ items: [{ producto_id: 1, cantidad: 2 }], pagos: [{ metodo: 'efectivo', monto: 99999 }], mayoreo: false });
+  assert.deepEqual(svc.stockBajo().productos.map((p) => [p.nombre, p.nivel, p.faltante]), [['Refresco 600ml', 'bajo', 0]]);
+  svc.ajustar({ producto_id: 1, modo: 'entrada', cantidad: 20, motivo: 'error_captura' });
+  assert.equal(svc.stockBajo().total, 0);
+});

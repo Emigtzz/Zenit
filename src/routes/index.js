@@ -31,6 +31,7 @@ module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl
   r.get('/inventario/motivos', ic.motivos);
   r.get('/inventario/kardex', v.validar(v.kardexSchema, 'query'), ic.kardex);
   r.get('/inventario/verificar', ic.verificar);
+  r.get('/inventario/stock-bajo', ic.stockBajo);
   r.post('/inventario/ajustes', v.validar(v.ajusteSchema), ic.ajustar);
 
   return r;

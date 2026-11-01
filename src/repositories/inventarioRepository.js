@@ -31,6 +31,27 @@ module.exports = function inventarioRepository(db) {
       return { total, filas };
     },
 
+    // Productos por reponer. Reglas (solo productos activos):
+    //   negativo = stock < 0 (se vendió sin existencia registrada: hay que contar)
+    //   agotado  = stock = 0 con mínimo definido
+    //   bajo     = 0 < stock <= stock_minimo
+    // stock_minimo = 0 significa "sin mínimo definido": ese producto no genera alerta salvo que quede negativo.
+    stockBajo() {
+      return db.prepare(`
+        SELECT * FROM (
+          SELECT p.id, p.nombre, p.codigo_barras, p.codigo_corto, p.stock, p.stock_minimo,
+                 c.nombre AS categoria_nombre, c.color AS categoria_color,
+                 MAX(p.stock_minimo - p.stock, 0) AS faltante,
+                 CASE WHEN p.stock < 0 THEN 'negativo' WHEN p.stock = 0 THEN 'agotado' ELSE 'bajo' END AS nivel
+          FROM productos p LEFT JOIN categorias c ON c.id = p.categoria_id
+          WHERE p.activo = 1 AND (p.stock < 0 OR (p.stock_minimo > 0 AND p.stock <= p.stock_minimo))
+        )
+        ORDER BY CASE nivel WHEN 'negativo' THEN 0 WHEN 'agotado' THEN 1 ELSE 2 END,
+                 CASE WHEN stock < 0 THEN stock ELSE 0 END,   -- negativos: el más negativo primero
+                 stock * 1.0 / NULLIF(stock_minimo, 0),        -- el resto: el más lejos de su mínimo primero
+                 nombre COLLATE NOCASE`).all();
+    },
+
     // Productos cuyo stock NO coincide con la suma de sus movimientos (señal de que algo se saltó el kárdex).
     inconsistencias() {
       return db.prepare(`

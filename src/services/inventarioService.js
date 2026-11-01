@@ -66,6 +66,12 @@ module.exports = function inventarioService(db) {
       return { total, pagina, por_pagina, filas };
     },
     verificar: () => inventario.inconsistencias(),
+    stockBajo() {
+      const productos = inventario.stockBajo();
+      const por_nivel = { negativo: 0, agotado: 0, bajo: 0 };
+      for (const p of productos) por_nivel[p.nivel]++;
+      return { total: productos.length, por_nivel, productos };
+    },
   };
 };
 module.exports.ID_MOTIVOS = ID_MOTIVOS;

@@ -135,3 +135,15 @@ test('inventario: ajuste por HTTP, kárdex y validaciones', async () => {
     assert.equal((await s.pedir('GET', '/inventario/verificar')).json.consistente, false);
   } finally { s.cerrar(); }
 });
+
+test('GET /inventario/stock-bajo devuelve resumen y lista', async () => {
+  const s = await levantar();
+  try {
+    s.db.prepare('UPDATE productos SET stock_minimo = 5, stock = 2 WHERE id = 2').run();
+    const r = await s.pedir('GET', '/inventario/stock-bajo');
+    assert.equal(r.status, 200);
+    assert.equal(r.json.total, 1);
+    assert.equal(r.json.productos[0].nombre, 'Galletas');
+    assert.equal(r.json.productos[0].faltante, 3);
+  } finally { s.cerrar(); }
+});
