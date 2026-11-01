@@ -43,6 +43,9 @@ module.exports = function productoRepository(db) {
     desactivar(id) {
       return db.prepare(`UPDATE productos SET activo = 0, actualizado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`).run(id).changes > 0;
     },
+    fijarCosto(id, costo) {
+      db.prepare(`UPDATE productos SET costo = ?, actualizado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`).run(costo, id);
+    },
     // Descuento atómico en SQL (stock = stock - n) en lugar de leer-modificar-escribir.
     ajustarStock(id, delta) {
       db.prepare('UPDATE productos SET stock = stock + ? WHERE id = ?').run(delta, id);
