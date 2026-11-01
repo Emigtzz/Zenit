@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catálogo · Zenit POS</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { overflow: auto; }
+    .pagina { max-width: 1100px; margin: 0 auto; padding: 16px; width: 100%; }
+    .tabs { display: flex; gap: 8px; margin: 12px 0; }
+    .tabs button { flex: none; }
+    .herr { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+    .herr input[type=search] { flex: 1; min-width: 200px; font-size: 16px; padding: 8px 10px; border: 2px solid var(--borde); border-radius: 8px; background: var(--panel); color: var(--texto); }
+    table.cat { background: var(--panel); border-radius: 10px; overflow: hidden; }
+    table.cat td, table.cat th { font-size: 15px; }
+    tr.inactivo td { opacity: .5; }
+    .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: middle; margin-right: 6px; }
+    dialog { border: 0; border-radius: 14px; padding: 20px; width: min(560px, 94vw); background: var(--panel); color: var(--texto); }
+    dialog::backdrop { background: rgba(2,6,23,.6); }
+    .rejilla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+    .rejilla .ancho { grid-column: 1 / -1; }
+    .rejilla label { font-size: 13px; color: var(--suave); display: block; margin-bottom: 3px; }
+    .rejilla input, .rejilla select { width: 100%; font-size: 16px; padding: 8px 10px; border: 2px solid var(--borde); border-radius: 8px; background: var(--fondo); color: var(--texto); }
+    .rejilla input[type=checkbox] { width: auto; }
+    .err { color: var(--error); font-weight: 600; min-height: 1.4em; }
+    .btn.peq { padding: 4px 10px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header class="barra">
+    <h1>Catálogo</h1>
+    <span class="atajos">Productos y categorías</span>
+    <a class="enlace" href="/">← Volver a la caja</a>
+  </header>
+  <div class="pagina">
+    <div class="tabs">
+      <button class="btn" id="tab-prod" type="button">Productos</button>
+      <button class="btn sec" id="tab-cat" type="button">Categorías</button>
+    </div>
+
+    <section id="sec-prod">
+      <div class="herr">
+        <input type="search" id="filtro" placeholder="Filtrar por nombre o código…" aria-label="Filtrar productos">
+        <label><input type="checkbox" id="ver-inactivos"> Mostrar desactivados</label>
+        <button class="btn" id="nuevo-prod" type="button">+ Nuevo producto</button>
+      </div>
+      <table class="cat"><thead><tr><th>Nombre</th><th>Categoría</th><th>Códigos</th><th class="num">Costo</th><th class="num">Precio</th><th class="num">Stock</th><th></th></tr></thead><tbody id="filas-prod"></tbody></table>
+    </section>
+
+    <section id="sec-cat" hidden>
+      <div class="herr"><button class="btn" id="nueva-cat" type="button">+ Nueva categoría</button></div>
+      <table class="cat"><thead><tr><th>Categoría</th><th></th></tr></thead><tbody id="filas-cat"></tbody></table>
+    </section>
+  </div>
+
+  <dialog id="dlg-prod">
+    <form id="form-prod" method="dialog">
+      <h2 id="titulo-prod">Producto</h2>
+      <div class="rejilla">
+        <div class="ancho"><label for="p-nombre">Nombre *</label><input id="p-nombre" required maxlength="120"></div>
+        <div><label for="p-barras">Código de barras (opcional)</label><input id="p-barras" maxlength="50" inputmode="numeric"></div>
+        <div><label for="p-corto">Código corto (ej. 101)</label><input id="p-corto" maxlength="20"></div>
+        <div><label for="p-cat">Categoría</label><select id="p-cat"></select></div>
+        <div><label for="p-min">Stock mínimo</label><input id="p-min" type="number" min="0" step="1" value="0"></div>
+        <div><label for="p-costo">Costo ($)</label><input id="p-costo" inputmode="decimal" value="0"></div>
+        <div><label for="p-precio">Precio de venta ($) *</label><input id="p-precio" inputmode="decimal" required></div>
+        <div><label for="p-stock">Stock inicial</label><input id="p-stock" type="number" step="1" value="0"></div>
+        <div style="align-self:end"><label><input id="p-boton" type="checkbox"> Botón rápido en la caja</label></div>
+        <div class="ancho" id="fila-activo"><label><input id="p-activo" type="checkbox" checked> Activo</label></div>
+      </div>
+      <p class="err" id="err-prod" role="alert"></p>
+      <div class="fila-btn"><button type="button" class="btn sec" id="cancel-prod">Cancelar</button><button type="submit" class="btn">Guardar</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-cat">
+    <form id="form-cat" method="dialog">
+      <h2 id="titulo-cat">Categoría</h2>
+      <div class="rejilla">
+        <div><label for="c-nombre">Nombre *</label><input id="c-nombre" required maxlength="60"></div>
+        <div><label for="c-color">Color</label><input id="c-color" type="color" value="#64748b"></div>
+      </div>
+      <p class="err" id="err-cat" role="alert"></p>
+      <div class="fila-btn"><button type="button" class="btn sec" id="cancel-cat">Cancelar</button><button type="submit" class="btn">Guardar</button></div>
+    </form>
+  </dialog>
+  <script type="module" src="/js/catalogo.js"></script>
+</body>
+</html>
