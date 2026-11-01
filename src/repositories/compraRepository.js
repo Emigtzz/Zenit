@@ -5,8 +5,8 @@ const BASE = `SELECT c.*, p.nombre AS proveedor_nombre, u.nombre AS usuario_nomb
 
 module.exports = function compraRepository(db) {
   return {
-    insertar: (c) => db.prepare(`INSERT INTO compras (proveedor_id, folio_factura, fecha, total, usuario_id, notas, pagada_de_caja, estado)
-        VALUES (@proveedor_id, @folio_factura, @fecha, @total, @usuario_id, @notas, @pagada_de_caja, 'registrada')`).run(c).lastInsertRowid,
+    insertar: (c) => db.prepare(`INSERT INTO compras (proveedor_id, folio_factura, fecha, total, usuario_id, notas, pagada_de_caja, uuid_cfdi, archivo, estado)
+        VALUES (@proveedor_id, @folio_factura, @fecha, @total, @usuario_id, @notas, @pagada_de_caja, @uuid_cfdi, @archivo, 'registrada')`).run(c).lastInsertRowid,
     insertarDetalle: (compraId, d) => db.prepare('INSERT INTO compra_detalle (compra_id, producto_id, cantidad, costo_unitario, costo_previo) VALUES (?, ?, ?, ?, ?)')
       .run(compraId, d.producto_id, d.cantidad, d.costo_unitario, d.costo_previo),
     obtener(id) {
@@ -16,6 +16,7 @@ module.exports = function compraRepository(db) {
                               FROM compra_detalle d JOIN productos pr ON pr.id = d.producto_id WHERE d.compra_id = ? ORDER BY d.id`).all(id);
       return c;
     },
+    uuidRegistrado: (uuid) => db.prepare("SELECT id FROM compras WHERE uuid_cfdi = ? AND estado = 'registrada'").get(uuid),
     folioRegistrado: (proveedorId, folio) =>
       db.prepare("SELECT id FROM compras WHERE proveedor_id = ? AND folio_factura = ? AND estado = 'registrada'").get(proveedorId, folio),
     marcarAnulada: (id, { iso, usuarioId, motivo }) =>

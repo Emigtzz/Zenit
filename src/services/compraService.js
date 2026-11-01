@@ -40,6 +40,11 @@ module.exports = function compraService(db, busqueda) {
     if (e.folio_factura && compras.folioRegistrado(e.proveedor_id, e.folio_factura)) {
       throw new ErrorApp(`La factura ${e.folio_factura} de ${prov.nombre} ya está registrada`, { status: 409, codigo: 'FOLIO_DUPLICADO' });
     }
+    // La misma factura fiscal (UUID) no se registra dos veces, aunque llegue por XML y por PDF.
+    if (e.uuid_cfdi) {
+      const previa = compras.uuidRegistrado(e.uuid_cfdi);
+      if (previa) throw new ErrorApp(`Esta factura ya está registrada en la compra #${previa.id}`, { status: 409, codigo: 'FACTURA_YA_REGISTRADA', detalles: { compra_id: previa.id } });
+    }
     const vistos = new Set();
     for (const it of e.items) {
       if (vistos.has(it.producto_id)) throw new ErrorApp('Un producto aparece dos veces; junta las piezas en una sola línea', { status: 422, codigo: 'PRODUCTO_REPETIDO' });
@@ -50,7 +55,8 @@ module.exports = function compraService(db, busqueda) {
 
     const fecha = fechaDeCompra(e.fecha);
     const total = e.items.reduce((s, it) => s + it.cantidad * it.costo_unitario, 0);
-    const id = compras.insertar({ proveedor_id: e.proveedor_id, folio_factura: e.folio_factura, fecha, total, usuario_id: usuarioId, notas: e.notas, pagada_de_caja: e.pagar_de_caja ? 1 : 0 });
+    const id = compras.insertar({ proveedor_id: e.proveedor_id, folio_factura: e.folio_factura, fecha, total, usuario_id: usuarioId, notas: e.notas, pagada_de_caja: e.pagar_de_caja ? 1 : 0,
+      uuid_cfdi: e.uuid_cfdi ?? null, archivo: e.archivo ?? null });
     for (const it of e.items) {
       compras.insertarDetalle(id, { ...it, costo_previo: productos.obtener(it.producto_id).costo }); // se guarda el costo de ANTES
       inventario.insertarMovimiento({ producto_id: it.producto_id, tipo: 'compra', cantidad: it.cantidad, referencia: `compra:${id}`,
