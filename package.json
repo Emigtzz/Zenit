@@ -8,7 +8,7 @@
     "dev": "node --watch src/server.js",
     "seed": "node scripts/seed.js",
     "db:reset": "node scripts/reset-db.js",
-    "test": "node --test test/"
+    "test": "node --test \"test/**/*.test.js\""
   },
   "repository": {
     "type": "git",
