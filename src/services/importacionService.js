@@ -52,13 +52,22 @@ module.exports = function importacionService(db, { config, ia, busqueda, compras
     return null;
   }
 
-  // Busca productos parecidos a la descripción del proveedor. Las descripciones de factura son largas ("REFRESCO COLA 600ML
-  // CAJA 24"), así que se prueba con los primeros N términos, de más a menos, hasta encontrar algo.
+  // "REFRESCO COLA 600ML" -> ["refresco","cola","600","ml"]: separa números de letras para que "600ML" (factura) y "600 ml" (catálogo) coincidan.
+  const tokens = (t) => normalizar(t).replace(/(\d)([a-zñ])/g, '$1 $2').replace(/([a-zñ])(\d)/g, '$1 $2').split(' ').filter(Boolean);
+
+  // Busca productos parecidos a la descripción del proveedor. Las descripciones de factura son largas, así que se busca con los
+  // primeros N términos (de más a menos) hasta encontrar algo, y luego se ORDENA por cuántos términos comparte cada producto con
+  // la descripción, tamaños incluidos: así "600ML" gana sobre "2 L" aunque el orden alfabético diga lo contrario.
   function candidatos(descripcion) {
-    const palabras = normalizar(descripcion).split(' ').filter((w) => w.length >= 2 && !RUIDO.has(w) && !/^\d+$/.test(w));
+    const todos = tokens(descripcion);
+    const palabras = todos.filter((w) => w.length >= 2 && !RUIDO.has(w) && !/^\d+$/.test(w));
     for (let n = Math.min(palabras.length, 4); n >= 1; n--) {
-      const r = busqueda.buscar(palabras.slice(0, n).join(' '), 3);
-      if (r.length) return r.map((p) => ({ producto_id: p.id, nombre: p.nombre }));
+      const pool = busqueda.buscar(palabras.slice(0, n).join(' '), 10);
+      if (!pool.length) continue;
+      const deLaFactura = new Set(todos);
+      const puntaje = (p) => tokens(p.nombre).filter((t) => deLaFactura.has(t)).length;
+      return pool.map((p) => ({ p, pts: puntaje(p) })).sort((x, y) => y.pts - x.pts || x.p.nombre.localeCompare(y.p.nombre, 'es'))
+        .slice(0, 3).map(({ p }) => ({ producto_id: p.id, nombre: p.nombre }));
     }
     return [];
   }

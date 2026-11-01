@@ -52,6 +52,7 @@ Otras pantallas (solo dueño):
 - Usuarios: <http://localhost:3000/usuarios.html>
 - Cortes de caja: <http://localhost:3000/cortes.html>
 - Compras y proveedores: <http://localhost:3000/compras.html>
+- Importar facturas (XML/PDF): <http://localhost:3000/importar.html>
 
 ## Compras y proveedores
 
@@ -72,6 +73,44 @@ Reglas que conviene conocer:
 - La fecha no puede ser futura. Un mismo producto no puede repetirse en la compra (junta las piezas).
 - **Anular** una compra (motivo obligatorio) revierte el stock con un movimiento `cancelacion` y regresa el costo al de la compra anterior; si no hay otra, al que tenía antes. No pisa un costo que corregiste a mano después. **No se puede anular si lo comprado ya se vendió** (el stock quedaría negativo): haz antes un conteo físico. Anular libera el folio para recapturar la factura correcta. Si la compra se pagó del cajón, el reembolso se registra a mano con `F6`.
 - Costos en pesos con centavos: un costo con fracciones de centavo (p. ej. $0.833 por pieza) se captura redondeado.
+
+## Importar facturas (XML y PDF)
+
+Solo el **dueño** (`/importar.html`). En vez de teclear cada factura de un proveedor, se sube el archivo y el sistema la lee; **una persona siempre la revisa antes de que se registre nada**.
+
+**Dos caminos, el mismo resultado:**
+
+| | XML (CFDI) | PDF |
+|---|---|---|
+| Cómo se lee | Directo en la caja, **sin internet** y sin costo | Con IA (Claude): requiere internet y una clave |
+| Confiabilidad | Datos exactos del documento fiscal | Aproximada: **verifica cada renglón** |
+| UUID fiscal | Sí (evita duplicados) | No (se apoya en folio y hash del archivo) |
+
+Si tu proveedor te manda XML, úsalo: es más rápido, gratis y exacto. El PDF es el respaldo.
+
+**Flujo:** subir (arrastrar o elegir) → **borrador** → *Revisión* → **Confirmar**. Un borrador no mueve inventario, costos ni caja. La revisión pide, renglón por renglón:
+
+1. **Proveedor:** se reconoce por RFC o nombre; si es nuevo, se crea al confirmar.
+2. **Producto de tu tienda** para cada renglón: ya viene sugerido si el sistema lo aprendió, o con candidatos parecidos (la búsqueda ignora el empaque y compara tamaños: "600ML" encuentra "600 ml").
+3. **Piezas por unidad:** el proveedor factura *cajas* y tú vendes *piezas*. Una caja de 24 → 24. Piezas = cantidad × factor (debe salir entero) y **costo por pieza = importe del renglón ÷ piezas**, que puedes corregir.
+4. **El costo incluye IVA** (casilla; el valor inicial sale de `COSTO_INCLUYE_IMPUESTOS` en `.env`).
+5. Quitar renglones que no son mercancía (flete, cargos), fecha, notas y si se pagó del cajón.
+
+Al confirmar se usa **la misma compra transaccional** de la captura manual (stock, kárdex, costo vigente, retiro de caja). Además:
+
+- **Aprende:** guarda proveedor + clave → producto + factor. La siguiente factura de ese proveedor llega ya con todo sugerido (siempre revisable). Las equivalencias se ven y se borran en la pestaña *Equivalencias aprendidas*.
+- **Duplicados:** no se acepta la misma factura dos veces (mismo **UUID**, mismo **folio** del proveedor, o el **mismo archivo**), aunque llegue por XML y por PDF.
+- Se compara el **total de la factura** con el que se va a registrar y se avisa si difieren.
+- Se guarda el **archivo original** en `data/facturas/` (incluye esa carpeta en tus respaldos) y se puede abrir desde la revisión.
+- No se aceptan notas de crédito, complementos de pago, traslados ni nómina: solo facturas de compra (tipo Ingreso). Moneda extranjera: se convierte con el tipo de cambio de la factura y se avisa.
+- **Límites:** 8 MB por archivo. **No se valida el sello ni se consulta al SAT**: solo se extraen los datos.
+
+### Activar la lectura de PDF con IA (opcional)
+
+1. Crea una clave en <https://console.anthropic.com> y ponla en `.env`: `ANTHROPIC_API_KEY=...`
+2. Reinicia la caja. Sin clave, los PDF se rechazan con un mensaje claro y los XML siguen funcionando.
+
+El modelo por defecto es `claude-opus-5-5` (`IA_MODELO` en `.env`). Cada PDF cuesta del orden de centavos de dólar. ⚠ **El contenido del PDF se envía a Anthropic** para leerlo. El PDF se trata como contenido no confiable (se le pide al modelo ignorar instrucciones escondidas en el documento) y el resultado jamás se registra sin tu revisión.
 
 ## Corte de caja
 
@@ -105,7 +144,7 @@ Todo el sistema pide iniciar sesión. En la pantalla de entrada se elige el nomb
 | Alta/edición/desactivación de catálogo y precios | ❌ | ✅ |
 | Ajustes de inventario y kárdex | ❌ | ✅ |
 | Gestionar usuarios | ❌ | ✅ |
-| Compras y proveedores | ❌ | ✅ |
+| Compras, proveedores e importar facturas | ❌ | ✅ |
 
 Contraseñas: **dueño** mínimo 8 caracteres; **cajero** mínimo 4 (puede ser un PIN). Se guardan con `scrypt` y sal propia, nunca en claro. Tras **5 intentos fallidos** el usuario se bloquea 1 minuto. Las sesiones duran 12 h de inactividad. Desactivar a alguien, cambiarle el rol o restablecerle la contraseña cierra sus sesiones abiertas. Siempre debe quedar al menos un dueño activo.
 
@@ -214,6 +253,8 @@ Todas las rutas excepto `/api/auth/estado`, `/api/auth/login` y `/api/auth/setup
 | `GET /api/ventas/:id`, `GET /api/ventas/:id/impresion`, `POST /api/ventas/:id/reimprimir` | Consulta y reimpresión |
 | `POST /api/inventario/ajustes` | `{producto_id, modo: entrada\|salida\|conteo, cantidad, motivo, nota}` |
 | `GET /api/inventario/kardex?producto_id=&tipo=&desde=&hasta=&pagina=` | Movimientos con saldo acumulado (fechas `AAAA-MM-DD`, hora local) |
+| `POST /api/importaciones` (cuerpo = el archivo, cabecera `X-Nombre-Archivo`), `GET /api/importaciones[/:id]`, `GET /api/importaciones/:id/archivo`, `POST /api/importaciones/:id/confirmar`, `POST /api/importaciones/:id/descartar` | Importación de facturas (dueño). Confirmar recibe piezas y costo por pieza ya revisados |
+| `GET /api/equivalencias`, `DELETE /api/equivalencias?proveedor_id=&clave=` | Equivalencias proveedor → producto (dueño) |
 | `GET/POST /api/proveedores`, `PUT /api/proveedores/:id` | Proveedores (dueño) |
 | `POST /api/compras`, `GET /api/compras`, `GET /api/compras/:id`, `POST /api/compras/:id/anular`, `GET /api/compras/producto/:id` | Compras (dueño). El cuerpo: `{proveedor_id, folio_factura?, fecha?, pagar_de_caja?, items:[{producto_id, cantidad, costo_unitario}]}` en centavos |
 | `GET /api/caja/estado`, `POST /api/caja/abrir`, `GET /api/caja/resumen`, `POST /api/caja/movimientos`, `POST /api/caja/cerrar` | Turno de caja (cajero y dueño; el cajero recibe un resumen ciego) |
@@ -235,7 +276,7 @@ Detalle y decisiones en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
 
 1. ✅ Venta básica (este README)
 2. ✅ Inventario y control: kárdex, ajustes, stock bajo, usuarios y permisos, corte de caja y compras manuales
-3. Importación de facturas (XML CFDI)
+3. ✅ Importación de facturas: XML CFDI y PDF con IA, con revisión obligatoria
 4. Estadísticas, sincronización a Supabase y PWA del dueño
 5. Puesta en marcha: catálogo real, etiquetas, respaldos y capacitación
 

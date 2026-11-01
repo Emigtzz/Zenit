@@ -7,3 +7,4 @@ graphify-out/cache/
 .venv-graphify/
 graphify-out/graph.html
 graphify-out/manifest.json
+data/facturas/

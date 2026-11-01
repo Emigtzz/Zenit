@@ -31,6 +31,28 @@ export async function requerirDueno() {
 }
 
 export const api = {
+  importarConfig: () => pedir('GET', '/importaciones/config'),
+  importaciones: (estado = '') => pedir('GET', '/importaciones' + (estado ? `?estado=${estado}` : '')),
+  importacion: (id) => pedir('GET', `/importaciones/${id}`),
+  confirmarImportacion: (id, d) => pedir('POST', `/importaciones/${id}/confirmar`, d),
+  descartarImportacion: (id) => pedir('POST', `/importaciones/${id}/descartar`),
+  equivalencias: () => pedir('GET', '/equivalencias'),
+  borrarEquivalencia: (proveedorId, clave) => pedir('DELETE', `/equivalencias?proveedor_id=${proveedorId}&clave=${encodeURIComponent(clave)}`),
+  // El archivo viaja CRUDO en el cuerpo (el nombre en una cabecera). Una lectura de PDF con IA puede tardar ~30 s.
+  async subirFactura(archivo) {
+    let res;
+    try {
+      res = await fetch('/api/importaciones', { method: 'POST', headers: { 'content-type': 'application/octet-stream', 'x-nombre-archivo': encodeURIComponent(archivo.name) }, body: archivo });
+    } catch { throw Object.assign(new Error('No hay conexión con el servidor de la caja'), { codigo: 'SIN_SERVIDOR' }); }
+    const texto = await res.text();
+    const datos = texto ? JSON.parse(texto) : null;
+    if (!res.ok) {
+      if (res.status === 401) { location.href = '/login.html?volver=' + encodeURIComponent(location.pathname); return new Promise(() => {}); }
+      const e = datos?.error || {};
+      throw Object.assign(new Error(e.mensaje || `Error ${res.status}`), { codigo: e.codigo, detalles: e.detalles, status: res.status });
+    }
+    return datos;
+  },
   proveedores: (todos = false) => pedir('GET', `/proveedores?incluir_inactivos=${todos ? 1 : 0}`),
   crearProveedor: (d) => pedir('POST', '/proveedores', d),
   actualizarProveedor: (id, d) => pedir('PUT', `/proveedores/${id}`, d),

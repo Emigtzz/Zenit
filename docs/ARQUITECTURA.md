@@ -79,3 +79,27 @@ Navegador (public/)  →  routes  →  controllers  →  services  →  reposito
 - **Folio único** por proveedor entre compras `registrada` (índice parcial): una anulada libera el folio. Nulo permitido varias veces.
 - **Índice de búsqueda**: guarda el costo del producto, así que se invalida tras registrar/anular; la pantalla además lee el producto fresco al elegirlo.
 - Base para la **fase 3**: `compras.archivo`, `proveedores.rfc` y la tabla `equivalencias_proveedor` ya están listas; la importación de XML solo tendrá que producir la misma entrada que esta captura manual (con la pantalla de revisión obligatoria).
+
+## Fase 3 — Importación de facturas
+
+```
+archivo ──► tipo por CONTENIDO (%PDF- / "<") ──► XML: cfdiParser (local)        ┐
+                                                  PDF: facturaIA (Claude)        ├─► "factura neutra" (centavos)
+                                                                                 ┘          │
+   duplicados: hash del archivo · UUID fiscal ──────────────────────────────────────────────┤
+                                                                                            ▼
+                                                  BORRADOR (tabla importaciones + archivo en data/facturas/)
+                                                                                            ▼
+                         sugerencias (equivalencias aprendidas / candidatos por similitud) ─► REVISIÓN HUMANA
+                                                                                            ▼
+                         confirmar = compraService.registrar (misma transacción de la captura manual) + equivalencias
+```
+
+- **Una sola "factura neutra"** (`fuente, uuid, folio, fecha, emisor, lineas[{clave_proveedor, importe_sin_impuestos, impuestos, …}]`): el parser XML y el extractor de PDF producen lo mismo, así que la revisión, las equivalencias y la compra no saben de dónde vino.
+- **Revisión obligatoria por diseño**: no existe ninguna ruta que registre una compra desde un archivo sin pasar por `confirmar`, y `confirmar` recibe lo que la persona dejó en pantalla (piezas y costo por pieza). Del archivo solo se toman datos que el usuario no puede alterar: UUID y archivo original.
+- **Dinero sin flotantes**: los importes del XML llegan como texto y se convierten con `decimalACentavos` (redondeo half-up por cadena). Costo por pieza = importe del renglón ÷ piezas; el total puede diferir unos centavos del de la factura por redondeo y se informa.
+- **Equivalencias con factor** (`equivalencias_proveedor.factor`): la unidad facturada ≠ la pieza de venta. Clave = `NoIdentificacion` del proveedor o, si no la manda, la descripción normalizada. El servidor toma la clave del renglón del borrador, no del cliente.
+- **Candidatos**: se busca con los primeros términos de la descripción (sin ruido de empaque) y se ordena por términos compartidos con el nombre del producto, números incluidos, para que "600ML" gane a "2 L".
+- **Seguridad**: XML con `DOCTYPE`/`ENTITY` se rechaza (XML bomb / XXE); `fast-xml-parser` no resuelve entidades externas. El tipo de archivo se decide por contenido, no por extensión. El nombre se sanea y la ruta se verifica dentro de `data/facturas/` (anti path traversal). El original se sirve como `text/plain` + `nosniff`. Subida cruda (`express.raw`, 8 MB) detrás de la sesión de dueño y del chequeo de `Origin`.
+- **IA como respaldo, no como dependencia**: la caja nunca la necesita para vender ni para registrar compras; sin clave o sin internet solo falla la lectura del PDF, con mensaje accionable. Se usa el SDK oficial con **salida estructurada** (`output_config.format` + zod): con `claude-opus-5-5` un `tool_choice` forzado es un 400, así que no se usa. El PDF es contenido no confiable: el prompt lo declara datos; aun si lo engañara, la salida solo alimenta un borrador revisable.
+- **No se valida la autenticidad fiscal** (sello/cadena original/estatus SAT). Ver pendientes.

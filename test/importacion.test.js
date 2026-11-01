@@ -248,3 +248,17 @@ test('archivo(): una ruta guardada fuera de la carpeta nunca se entrega (path tr
   db.prepare('UPDATE importaciones SET archivo_ruta = ? WHERE id = ?').run('../../../etc/passwd', a.id);
   assert.throws(() => svc.archivo(a.id), (e) => e.codigo === 'NO_ENCONTRADO');
 });
+
+test('sugerencias: "600ML" de la factura gana a "2 L" aunque el catálogo escriba "600 ml" (ordena por términos en común, no por alfabeto)', async () => {
+  const { svc, db } = entorno();
+  db.exec('DELETE FROM productos');
+  const ins = db.prepare('INSERT INTO productos (nombre, categoria_id, precio, stock) VALUES (?, 1, 1000, 5)');
+  ['Refresco cola 2 L', 'Refresco cola 600 ml', 'Refresco naranja 600 ml', 'Agua natural 1 L'].forEach((n) => ins.run(n));
+  const b = await svc.crear({ buffer: xmlBuf({ conceptos: [
+    { clave: 'X1', descripcion: 'REFRESCO COLA 600ML CAJA 24', cantidad: '1', valorUnitario: '100.00', importe: '100.00', iva: '16.00' },
+    { clave: 'X2', descripcion: 'AGUA NATURAL 1LT', cantidad: '1', valorUnitario: '10.00', importe: '10.00', iva: '1.60' },
+  ], subtotal: '110.00', total: '127.60' }), nombre: 'f.xml' });
+  assert.equal(b.factura.lineas[0].candidatos[0].nombre, 'Refresco cola 600 ml');
+  assert.deepEqual(b.factura.lineas[0].candidatos.map((c) => c.nombre), ['Refresco cola 600 ml', 'Refresco cola 2 L']);
+  assert.equal(b.factura.lineas[1].candidatos[0].nombre, 'Agua natural 1 L');
+});

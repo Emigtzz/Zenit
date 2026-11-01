@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Importar facturas · Zenit POS</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { overflow: auto; }
+    .pagina { max-width: 1250px; margin: 0 auto; padding: 16px; width: 100%; }
+    .tabs { display: flex; gap: 8px; margin: 12px 0; }
+    .tarjeta { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+    .drop { border: 3px dashed var(--borde); border-radius: 14px; padding: 28px; text-align: center; color: var(--suave); cursor: pointer; }
+    .drop.sobre, .drop:focus { border-color: var(--acento); color: var(--texto); outline: none; background: var(--sel); }
+    .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 14px; align-items: end; }
+    .rejilla label, .campo-l { font-size: 13px; color: var(--suave); display: block; margin-bottom: 3px; }
+    .rejilla input[type=text], .rejilla input[type=date], .rejilla select { width: 100%; font-size: 15px; padding: 7px 9px; border: 2px solid var(--borde); border-radius: 8px; background: var(--fondo); color: var(--texto); font-family: inherit; }
+    .ancho { grid-column: 1 / -1; }
+    .check { display: flex; gap: 8px; align-items: center; font-size: 15px; color: var(--texto) !important; }
+    table.cat { background: var(--panel); border-radius: 10px; width: 100%; } table.cat td, table.cat th { font-size: 13px; vertical-align: top; padding: 8px; }
+    table.cat input[type=text] { width: 84px; text-align: right; font-size: 14px; padding: 5px 7px; border: 2px solid var(--borde); border-radius: 7px; background: var(--fondo); color: var(--texto); }
+    tr.ignorada td { opacity: .4; }
+    tr.mal td:first-child { box-shadow: inset 4px 0 0 var(--error); }
+    .sub { color: var(--suave); font-size: 12px; }
+    .adv { background: var(--aviso); color: #fff; border-radius: 10px; padding: 8px 12px; margin-bottom: 8px; font-size: 14px; }
+    .adv.bloqueo { background: var(--error); }
+    .ok-caja { background: var(--ok); color: #fff; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-weight: 600; }
+    .etq { display: inline-block; font-size: 12px; padding: 1px 9px; border-radius: 999px; background: var(--borde); }
+    .etq.ia { background: #7c3aed; color: #fff; } .etq.xml { background: var(--ok); color: #fff; } .etq.pend { background: var(--aviso); color: #fff; }
+    .cand { margin: 2px 4px 2px 0; padding: 2px 9px; font-size: 12px; border-radius: 999px; border: 1px dashed var(--acento); background: transparent; color: var(--texto); cursor: pointer; }
+    .total-linea { font-size: 20px; font-weight: 800; text-align: right; }
+    .err { color: var(--error); font-weight: 600; min-height: 1.4em; }
+    .aviso-linea { color: var(--aviso); font-size: 12px; font-weight: 600; }
+    .btn.peq { padding: 4px 10px; font-size: 13px; }
+    .pick-celda { min-width: 230px; }
+    .cargando { text-align: center; padding: 18px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header class="barra">
+    <h1>Importar facturas</h1>
+    <span class="atajos">XML (CFDI) y PDF · siempre con revisión antes de registrar</span>
+    <a class="enlace" href="/compras.html">Compras</a>
+    <a class="enlace" href="/inventario.html">Inventario</a>
+    <a class="enlace" href="/">← Volver a la caja</a>
+  </header>
+  <div class="pagina">
+    <div id="resultado" hidden></div>
+
+    <!-- LISTA -->
+    <section id="vista-lista">
+      <div class="tabs">
+        <button class="btn" id="tab-subir" type="button">Subir y pendientes</button>
+        <button class="btn sec" id="tab-hist" type="button">Historial</button>
+        <button class="btn sec" id="tab-eq" type="button">Equivalencias aprendidas</button>
+      </div>
+
+      <div id="sec-subir">
+        <div class="tarjeta">
+          <div class="drop" id="drop" tabindex="0" role="button" aria-label="Elegir o arrastrar la factura">
+            <div style="font-size:34px">📄</div>
+            <b>Arrastra aquí la factura (XML o PDF)</b> o haz clic para elegirla
+            <div class="sub" id="nota-ia" style="margin-top:6px"></div>
+          </div>
+          <input type="file" id="archivo" accept=".xml,.pdf,application/xml,text/xml,application/pdf" hidden>
+          <div id="cargando" class="cargando" hidden></div>
+          <p class="err" id="err-subir" role="alert"></p>
+        </div>
+        <h3>Pendientes de revisar</h3>
+        <table class="cat"><thead><tr><th>#</th><th>Archivo</th><th>Proveedor</th><th>Folio</th><th class="num">Total</th><th>Origen</th><th></th></tr></thead><tbody id="filas-pend"></tbody></table>
+        <p id="vacio-pend" class="ayuda" hidden>No hay facturas pendientes.</p>
+      </div>
+
+      <div id="sec-hist" hidden>
+        <table class="cat"><thead><tr><th>#</th><th>Fecha</th><th>Archivo</th><th>Proveedor</th><th>Folio</th><th class="num">Total</th><th>Estado</th></tr></thead><tbody id="filas-hist"></tbody></table>
+      </div>
+
+      <div id="sec-eq" hidden>
+        <p class="ayuda">Lo que el sistema aprendió de tus revisiones. Si una equivalencia está mal, bórrala: la próxima vez se te volverá a preguntar.</p>
+        <table class="cat"><thead><tr><th>Proveedor</th><th>Cómo lo llama</th><th>Clave</th><th>→ Producto</th><th class="num">Piezas por unidad</th><th></th></tr></thead><tbody id="filas-eq"></tbody></table>
+      </div>
+    </section>
+
+    <!-- REVISIÓN -->
+    <section id="vista-revision" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0">
+        <button class="btn sec" id="volver" type="button">← Volver a la lista</button>
+        <span><a class="enlace" id="ver-original" href="#" target="_blank" rel="noopener">Ver archivo original</a></span>
+      </div>
+      <div id="advertencias"></div>
+
+      <div class="tarjeta">
+        <h3 style="margin-top:0">1 · Datos de la factura <span id="origen"></span></h3>
+        <div class="rejilla">
+          <div class="ancho"><span class="campo-l">Proveedor</span>
+            <div id="prov-bloque"></div></div>
+          <div><label for="r-folio">Folio de la factura</label><input id="r-folio" type="text" maxlength="40" autocomplete="off"></div>
+          <div><label for="r-fecha">Fecha de la factura</label><input id="r-fecha" type="date"></div>
+          <div><label>UUID fiscal</label><div id="r-uuid" class="sub" style="padding:8px 0"></div></div>
+          <div><label class="check"><input id="r-caja" type="checkbox"> Pagada con efectivo del cajón</label></div>
+          <div><label class="check"><input id="r-imp" type="checkbox"> El costo incluye IVA / impuestos</label></div>
+        </div>
+      </div>
+
+      <div class="tarjeta">
+        <h3 style="margin-top:0">2 · Renglones: ¿a qué producto de tu tienda corresponde cada uno?</h3>
+        <p class="ayuda">El proveedor factura por <b>unidad facturada</b> (caja, paquete…). Tú vendes <b>piezas</b>: en <i>Piezas por unidad</i> escribe cuántas trae cada una (una caja de 24 → 24). El costo por pieza se calcula solo, pero puedes corregirlo.</p>
+        <table class="cat">
+          <thead><tr><th>✓</th><th>Lo que dice la factura</th><th>Producto de tu tienda</th><th class="num">Piezas por unidad</th><th class="num">Piezas</th><th class="num">Costo por pieza ($)</th><th>Costo actual → nuevo</th></tr></thead>
+          <tbody id="lineas"></tbody>
+        </table>
+        <div class="rejilla" style="margin-top:12px">
+          <div><span class="campo-l">Total de la factura</span><div id="t-factura" class="total-linea"></div></div>
+          <div><span class="campo-l">Total que se va a registrar</span><div id="t-capturado" class="total-linea"></div></div>
+          <div class="ancho"><label for="r-notas">Notas (opcional)</label><input id="r-notas" type="text" maxlength="300" autocomplete="off"></div>
+        </div>
+        <p class="err" id="err-conf" role="alert"></p>
+        <div class="fila-btn"><button class="btn sec" id="descartar" type="button">Descartar esta factura</button><button class="btn" id="confirmar" type="button" disabled>Confirmar y registrar compra</button></div>
+      </div>
+    </section>
+  </div>
+  <script type="module" src="/js/importar.js"></script>
+</body>
+</html>
