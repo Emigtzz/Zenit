@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const { validarZona } = require('./utils/zonaHoraria');
-const { esClaveDeAdministrador } = require('./sync/claves');
+const { esClaveDeAdministrador, problemaConUrlSupabase } = require('./sync/claves');
 
 const raiz = path.join(__dirname, '..');
 const envPath = path.join(raiz, '.env');
@@ -50,9 +50,11 @@ const config = {
     const password = process.env.SYNC_PASSWORD || '';
     // Si por error pusieron la clave de ADMINISTRADOR, la sincronización se APAGA (la caja sigue cobrando) y se avisa en voz alta.
     const claveAdmin = Boolean(anonKey) && esClaveDeAdministrador(anonKey);
+    const problemaUrl = url ? problemaConUrlSupabase(url) : null;
+    const advertencia = claveAdmin ? 'SUPABASE_ANON_KEY es una clave de ADMINISTRADOR (service_role / sb_secret_). La sincronización se desactivó por seguridad: usa la clave "anon" o "publishable".'
+      : problemaUrl ? `SUPABASE_URL ${problemaUrl}. La sincronización está desactivada hasta que lo corrijas (la caja funciona igual).` : null;
     return { url, anonKey, email, password, intervaloSeg: entero('SYNC_INTERVALO_SEG', 60, { min: 15, max: 3600 }),
-      habilitada: Boolean(url && anonKey && email && password) && !claveAdmin,
-      advertencia: claveAdmin ? 'SUPABASE_ANON_KEY es una clave de ADMINISTRADOR (service_role / sb_secret_). La sincronización se desactivó por seguridad: usa la clave "anon" o "publishable".' : null };
+      habilitada: Boolean(url && anonKey && email && password) && !advertencia, advertencia };
   })(),
   // Importación de facturas (fase 3)
   costoIncluyeImpuestos: (process.env.COSTO_INCLUYE_IMPUESTOS ?? 'true').toLowerCase() !== 'false',

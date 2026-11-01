@@ -340,3 +340,27 @@ test('si ponen una clave de administrador en el .env, la sincronización se DESA
   assert.equal(mala.h, false);
   assert.match(mala.a, /ADMINISTRADOR/);
 });
+
+test('URL de Supabase: detecta la dirección del PANEL (error típico), rutas de más y direcciones inválidas; acepta la buena', () => {
+  const { problemaConUrlSupabase: problema } = require('../src/sync/claves');
+  assert.equal(problema('https://abcdefgh.supabase.co'), null);
+  assert.equal(problema('https://abcdefgh.supabase.co/'), null);
+  assert.equal(problema('http://127.0.0.1:3201'), null);                       // pruebas locales
+  assert.equal(problema('https://mi-servidor.ejemplo.com'), null);              // Supabase propio (self-hosted)
+  assert.match(problema('https://supabase.com/dashboard/org/sjflkcespjciviyrxjob'), /PANEL/);   // el caso real del primer intento
+  assert.match(problema('https://supabase.com/dashboard/project/abcdefgh'), /PANEL/);
+  assert.match(problema('https://abcdefgh.supabase.co/rest/v1'), /quita la parte "\/rest\/v1"/);
+  assert.match(problema('abcdefgh.supabase.co'), /dirección válida/);
+  assert.match(problema('http://abcdefgh.supabase.co'), /https/);
+});
+
+test('con la URL del panel la sincronización se DESACTIVA con un aviso claro (no se queda reintentando en silencio)', () => {
+  const { execFileSync } = require('node:child_process');
+  const leer = (url) => JSON.parse(execFileSync('node', ['-e', 'const c=require("./src/config");console.log(JSON.stringify({h:c.sync.habilitada,a:c.sync.advertencia}))'],
+    { cwd: require('node:path').join(__dirname, '..'), env: { PATH: process.env.PATH, SUPABASE_URL: url, SUPABASE_ANON_KEY: 'sb_publishable_ok', SYNC_EMAIL: 'c@x.com', SYNC_PASSWORD: 'pw' }, encoding: 'utf8' }));
+  assert.deepEqual(leer('https://abcdefgh.supabase.co'), { h: true, a: null });
+  const r = leer('https://supabase.com/dashboard/org/sjflkcespjciviyrxjob');
+  assert.equal(r.h, false);
+  assert.match(r.a, /PANEL/);
+  assert.match(r.a, /la caja funciona igual/);
+});

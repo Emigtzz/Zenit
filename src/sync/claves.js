@@ -11,4 +11,19 @@ function esClaveDeAdministrador(clave) {
   }
   return /service_role/i.test(k);
 }
-module.exports = { esClaveDeAdministrador };
+
+// Errores típicos al copiar la URL de Supabase. Devuelve un mensaje para el usuario, o null si se ve bien.
+function problemaConUrlSupabase(url) {
+  let u;
+  try { u = new URL(url); } catch { return 'no es una dirección válida. Debe verse como https://abcdefgh.supabase.co'; }
+  const local = /^(localhost|127\.0\.0\.1)$/.test(u.hostname);
+  if (u.protocol !== 'https:' && !local) return 'debe empezar con https://';
+  if (/(^|\.)supabase\.com$/i.test(u.hostname) || /\/dashboard/i.test(u.pathname)) {
+    return 'esa es la dirección del PANEL de Supabase (la de la barra del navegador), no la de tu proyecto. En el panel abre Project Settings → API y copia la "Project URL": se ve como https://abcdefgh.supabase.co';
+  }
+  if (/\.supabase\.(co|in)$/i.test(u.hostname) && u.pathname.replace(/\/+$/, '') !== '') {
+    return 'la URL del proyecto no lleva nada después de ".supabase.co" (quita la parte "' + u.pathname + '")';
+  }
+  return null;
+}
+module.exports = { esClaveDeAdministrador, problemaConUrlSupabase };
