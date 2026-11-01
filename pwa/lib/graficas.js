@@ -113,9 +113,10 @@ export function barrasH(zona, filas, { formatoValor = pesos, vacio = 'Sin datos'
   const lista = html('div', { class: 'viz-filas', role: 'list' });
   for (const f of filas) {
     const barra = html('div', { class: 'barra' }); barra.style.setProperty('--p', String(f.valor / max));
+    if (!f.valor) barra.style.visibility = 'hidden'; // un cero no se dibuja (ni siquiera la rayita mínima)
     const cifra = html('div', { class: 'cifra', texto: formatoValor(f.valor) });
     const fila = html('div', { class: 'viz-fila', role: 'listitem', tabindex: 0, 'aria-label': `${f.nombre}: ${formatoValor(f.valor)}${f.detalle ? `, ${f.detalle}` : ''}` },
-      html('div', { class: 'nombre', texto: f.nombre }), html('div', { class: 'pista' }, barra, cifra));
+      html('div', { class: 'nombre', texto: f.nombre, title: f.nombre }), html('div', { class: 'pista' }, barra, cifra));
     const mostrar = () => tip.mostrar(fila.offsetLeft + fila.offsetWidth / 2, fila.offsetTop - 2, formatoValor(f.valor), f.nombre, f.detalle);
     fila.addEventListener('pointerenter', mostrar); fila.addEventListener('focus', mostrar);
     fila.addEventListener('pointerleave', tip.ocultar); fila.addEventListener('blur', tip.ocultar);

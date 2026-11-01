@@ -1,0 +1,28 @@
+:root { color-scheme: light dark; --pagina: #f1f5f9; --tinta: #0f172a; --suave: #64748b; --borde: #e2e8f0; --acento: #4f46e5; --error: #dc2626; --ok: #16a34a; --aviso: #d97706; }
+@media (prefers-color-scheme: dark) { :root { --pagina: #0b1220; --tinta: #e5e7eb; --suave: #94a3b8; --borde: #243049; } }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--pagina); color: var(--tinta); min-height: 100vh; }
+main { max-width: 760px; margin: 0 auto; padding: 12px 16px calc(24px + env(safe-area-inset-bottom)); }
+[hidden] { display: none !important; }
+.btn { border: 0; border-radius: 10px; padding: 10px 16px; font: inherit; font-weight: 650; background: var(--acento); color: #fff; cursor: pointer; }
+.btn.sec { background: var(--borde); color: var(--tinta); } .btn.peq { padding: 6px 12px; font-size: 14px; }
+.btn:disabled { opacity: .55; }
+
+.login { max-width: 380px; margin: 12vh auto 0; background: color-mix(in srgb, var(--pagina) 40%, #fff 0%); }
+.tarjeta-login { background: var(--pagina); border: 1px solid var(--borde); border-radius: 16px; padding: 24px; }
+.login h1 { margin: 0 0 4px; font-size: 24px; } .login p { color: var(--suave); margin: 0 0 16px; }
+.login label { display: block; font-size: 13px; color: var(--suave); margin: 12px 0 4px; }
+.login input { width: 100%; font-size: 17px; padding: 11px 12px; border: 2px solid var(--borde); border-radius: 10px; background: transparent; color: var(--tinta); }
+.login input:focus { border-color: var(--acento); outline: none; }
+.login .btn { width: 100%; margin-top: 16px; padding: 12px; }
+.err { color: var(--error); font-weight: 600; min-height: 1.4em; margin: 10px 0 0; font-size: 14px; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0 10px; }
+.top h1 { margin: 0; font-size: 19px; } .top .acciones { display: flex; gap: 8px; }
+.banner { border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; font-size: 14px; background: color-mix(in srgb, var(--ok) 14%, transparent); border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent); }
+.banner.aviso { background: color-mix(in srgb, var(--aviso) 18%, transparent); border-color: color-mix(in srgb, var(--aviso) 55%, transparent); }
+.banner.error { background: color-mix(in srgb, var(--error) 14%, transparent); border-color: color-mix(in srgb, var(--error) 50%, transparent); }
+.filtros { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.filtros input[type=date] { font-size: 15px; padding: 7px 9px; border: 2px solid var(--borde); border-radius: 8px; background: transparent; color: var(--tinta); }
+.pie { text-align: center; color: var(--suave); font-size: 12px; margin-top: 16px; }

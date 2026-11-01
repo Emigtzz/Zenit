@@ -1,0 +1,13 @@
+/* Distribución del tablero (caja y celular). Escritorio: 12 columnas; celular: una columna. */
+.tab { display: grid; gap: 14px; grid-template-columns: repeat(12, 1fr); }
+.tab .c12 { grid-column: span 12; } .tab .c8 { grid-column: span 8; } .tab .c4 { grid-column: span 4; }
+@media (max-width: 900px) { .tab .c8, .tab .c4 { grid-column: span 12; } }
+.tab-kpis { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); align-content: start; }
+.tab-lateral { display: grid; gap: 14px; align-content: start; }
+.viz-tarjeta.tile { padding: 12px 16px; }
+.tab .linea { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 3px 0; }
+.tab .estado { font-weight: 650; }
+.tab .bien { color: var(--viz-bien); } .tab .mal { color: var(--viz-mal); }
+.conmutador { display: inline-flex; border: 1px solid var(--viz-base); border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+.conmutador button { border: 0; background: transparent; color: var(--viz-t2); padding: 5px 14px; font: inherit; font-size: 12px; cursor: pointer; }
+.conmutador button[aria-pressed=true] { background: var(--viz-serie); color: #fff; }

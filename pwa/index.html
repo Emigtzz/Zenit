@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Luna de precios · Dueño</title>
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="lib/graficas.css">
+  <link rel="stylesheet" href="lib/tablero.css">
+</head>
+<body>
+  <main>
+    <!-- Falta configurar -->
+    <section id="v-config" class="login" hidden>
+      <div class="tarjeta-login"><h1>Falta configurar</h1><p>Esta app todavía no sabe a qué proyecto de Supabase conectarse. Edita <b>pwa/config.js</b> (o ejecuta <code>npm run pwa:configurar</code> en la caja) y vuelve a publicar la carpeta.</p></div>
+    </section>
+
+    <!-- Inicio de sesión -->
+    <section id="v-login" class="login" hidden>
+      <form class="tarjeta-login" id="f-login" autocomplete="on">
+        <h1 id="login-titulo">Luna de precios</h1>
+        <p>Entra con tu cuenta de dueño para ver tus ventas.</p>
+        <label for="email">Correo</label><input id="email" type="email" autocomplete="username" inputmode="email" required>
+        <label for="pass">Contraseña</label><input id="pass" type="password" autocomplete="current-password" required>
+        <p class="err" id="err-login" role="alert"></p>
+        <button class="btn" type="submit" id="btn-entrar">Entrar</button>
+      </form>
+    </section>
+
+    <!-- Tablero -->
+    <section id="v-tablero" hidden>
+      <header class="top">
+        <h1 id="negocio">Mi negocio</h1>
+        <div class="acciones"><button class="btn sec peq" id="actualizar" type="button">Actualizar</button><button class="btn sec peq" id="salir" type="button">Salir</button></div>
+      </header>
+      <div id="banner" class="banner" role="status" hidden></div>
+      <div class="filtros" role="group" aria-label="Día a consultar">
+        <button class="btn sec peq" id="f-hoy" type="button">Hoy</button>
+        <button class="btn sec peq" id="f-ayer" type="button">Ayer</button>
+        <input type="date" id="f-dia" aria-label="Elegir día">
+      </div>
+      <div id="tablero"></div>
+      <p class="pie" id="pie"></p>
+    </section>
+  </main>
+  <script src="vendor/supabase.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

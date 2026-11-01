@@ -9,7 +9,8 @@
     "seed": "node scripts/seed.js",
     "db:reset": "node scripts/reset-db.js",
     "test": "node --test \"test/**/*.test.js\"",
-    "usuarios": "node scripts/usuarios.js"
+    "usuarios": "node scripts/usuarios.js",
+    "pwa:configurar": "node scripts/pwa-configurar.js"
   },
   "repository": {
     "type": "git",
