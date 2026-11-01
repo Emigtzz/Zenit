@@ -1,0 +1,32 @@
+{
+  "name": "zenit-pos",
+  "version": "1.0.0",
+  "description": "POS e inventario local-primero para Luna de precios",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node scripts/seed.js",
+    "db:reset": "node scripts/reset-db.js",
+    "test": "node --test test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Emigtzz/Zenit.git"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Emigtzz/Zenit/issues"
+  },
+  "homepage": "https://github.com/Emigtzz/Zenit#readme",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "express": "^5.3.0",
+    "node-thermal-printer": "^4.6.1",
+    "zod": "^4.6.7"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  }
+}
