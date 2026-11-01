@@ -45,3 +45,4 @@ Navegador (public/)  →  routes  →  controllers  →  services  →  reposito
 - **Motivos**: catálogo cerrado (`inventarioService.MOTIVOS`) para poder reportar mermas después; "otro" exige nota.
 - **Verificación** (`/inventario/verificar`): detecta productos cuyo `stock` ≠ suma de sus movimientos.
 - **Pendiente con usuarios**: `usuario_id` ya se guarda (NULL hoy); los ajustes pasarán a requerir rol *dueño*.
+- **Stock bajo**: se calcula al consultar (sin tabla ni caché), así que siempre refleja el stock actual. `stock_minimo = 0` significa "sin mínimo": no alerta, salvo stock negativo. Orden: negativos (el más negativo primero), agotados y bajos por cercanía a cero respecto a su mínimo.

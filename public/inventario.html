@@ -29,6 +29,10 @@
     .vista { font-size: 22px; font-weight: 800; margin: 10px 0; }
     .err { color: var(--error); font-weight: 600; min-height: 1.4em; }
     .alerta { background: var(--aviso); color: #fff; border-radius: 10px; padding: 10px 14px; margin: 12px 0; font-weight: 600; }
+    .herr-bajo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+    .nivel { font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; color: #fff; }
+    .nivel.negativo { background: #7c3aed; } .nivel.agotado { background: var(--error); } .nivel.bajo { background: var(--aviso); }
+    @media print { .barra, .tabs, .no-print, #alerta, .herr-bajo button { display: none !important; } body { background: #fff; color: #000; overflow: visible; } table.cat { background: #fff; } }
     .pie { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 10px; color: var(--suave); }
   </style>
 </head>
@@ -42,9 +46,23 @@
   <div class="pagina">
     <div id="alerta" class="alerta" hidden role="alert"></div>
     <div class="tabs">
+      <button class="btn sec" id="tab-bajo" type="button">Stock bajo <span id="badge-bajo" class="etq" hidden></span></button>
       <button class="btn" id="tab-ajuste" type="button">Ajustar existencias</button>
       <button class="btn sec" id="tab-kardex" type="button">Kárdex</button>
     </div>
+
+    <!-- STOCK BAJO -->
+    <section id="sec-bajo" hidden>
+      <div class="herr-bajo">
+        <div id="resumen-bajo" class="ayuda"></div>
+        <button class="btn sec peq" id="imprimir-bajo" type="button">🖨 Imprimir lista</button>
+      </div>
+      <table class="cat">
+        <thead><tr><th>Estado</th><th>Producto</th><th>Categoría</th><th class="num">Stock</th><th class="num">Mínimo</th><th class="num">Faltan</th><th class="no-print"></th></tr></thead>
+        <tbody id="filas-bajo"></tbody>
+      </table>
+      <p id="vacio-bajo" class="ayuda" hidden>✔ Nada por reponer. Los productos con "stock mínimo" = 0 no generan alertas: define el mínimo en el catálogo.</p>
+    </section>
 
     <!-- AJUSTE -->
     <section id="sec-ajuste">

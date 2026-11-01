@@ -25,8 +25,9 @@ function selectorProducto(contenedor, alElegir, { placeholder }) {
       : [el('li', { texto: 'Sin resultados' })]));
     lista.hidden = false;
   }
-  function elegir(i) {
-    const p = res[i]; if (!p) return;
+  function elegir(i) { fijar(res[i]); }
+  function fijar(p) {
+    if (!p) return;
     entrada.value = p.nombre; elegido = true; entrada.disabled = true; quitar.hidden = false; lista.hidden = true;
     alElegir(p);
   }
@@ -45,7 +46,7 @@ function selectorProducto(contenedor, alElegir, { placeholder }) {
     else if (e.key === 'Escape') { lista.hidden = true; }
   });
   entrada.addEventListener('blur', () => setTimeout(() => (lista.hidden = true), 120));
-  return { limpiar, enfocar: () => entrada.focus() };
+  return { limpiar, fijar, enfocar: () => entrada.focus() };
 }
 
 // ---------- Ajuste ----------
@@ -128,14 +129,38 @@ async function verificar() {
   }
 }
 
+// ---------- Stock bajo ----------
+const NIVELES = { negativo: 'Contar (negativo)', agotado: 'Agotado', bajo: 'Bajo' };
+async function cargarBajo() {
+  const r = await api.stockBajo();
+  $('badge-bajo').hidden = r.total === 0;
+  $('badge-bajo').textContent = r.total;
+  const n = r.por_nivel;
+  $('resumen-bajo').textContent = r.total ? `${r.total} por reponer: ${n.negativo} por contar, ${n.agotado} agotados, ${n.bajo} bajos` : '';
+  $('vacio-bajo').hidden = r.total !== 0;
+  $('filas-bajo').replaceChildren(...r.productos.map((p) => el('tr', {},
+    el('td', {}, el('span', { class: 'nivel ' + p.nivel, texto: NIVELES[p.nivel] })),
+    el('td', { texto: p.nombre }),
+    el('td', { texto: p.categoria_nombre || '—' }),
+    el('td', { class: 'num', texto: String(p.stock) }),
+    el('td', { class: 'num', texto: String(p.stock_minimo) }),
+    el('td', { class: 'num', texto: p.faltante ? String(p.faltante) : '—' }),
+    el('td', { class: 'num no-print' }, el('button', { class: 'btn sec peq', type: 'button', onclick: () => { pestaña('ajuste'); selAjuste.limpiar(); selAjuste.fijar(p); } }, 'Ajustar')))));
+  return r;
+}
+$('imprimir-bajo').onclick = () => window.print();
+
 // ---------- Pestañas e inicio ----------
 function pestaña(cual) {
+  $('sec-bajo').hidden = cual !== 'bajo';
+  $('tab-bajo').className = 'btn' + (cual === 'bajo' ? '' : ' sec');
+  if (cual === 'bajo') cargarBajo();
   $('sec-ajuste').hidden = cual !== 'ajuste'; $('sec-kardex').hidden = cual !== 'kardex';
   $('tab-ajuste').className = 'btn' + (cual === 'ajuste' ? '' : ' sec');
   $('tab-kardex').className = 'btn' + (cual === 'kardex' ? '' : ' sec');
   if (cual === 'kardex') consultar();
 }
-$('tab-ajuste').onclick = () => pestaña('ajuste'); $('tab-kardex').onclick = () => pestaña('kardex');
+$('tab-bajo').onclick = () => pestaña('bajo'); $('tab-ajuste').onclick = () => pestaña('ajuste'); $('tab-kardex').onclick = () => pestaña('kardex');
 const selAjuste = selectorProducto($('pick-ajuste'), elegirProducto, { placeholder: 'Escribe el nombre o código del producto…' });
 selectorProducto($('pick-kardex'), (p) => { kProducto = p; pagina = 1; }, { placeholder: 'Todos los productos' });
 
@@ -144,5 +169,7 @@ selectorProducto($('pick-kardex'), (p) => { kProducto = p; pagina = 1; }, { plac
   $('a-motivo').replaceChildren(...motivos.map((m) => el('option', { value: m.id, texto: m.nombre })));
   pintarModos();
   verificar();
-  selAjuste.enfocar();
+  // Si hay algo por reponer, esa es la primera pantalla; si no, directo a ajustar.
+  const bajo = await cargarBajo();
+  if (bajo.total) pestaña('bajo'); else { pestaña('ajuste'); selAjuste.enfocar(); }
 })().catch((e) => { $('alerta').hidden = false; $('alerta').textContent = e.message; });

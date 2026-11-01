@@ -144,6 +144,17 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Indicador discreto en el encabezado: cuántos productos hay por reponer. Si falla, no estorba a la venta.
+async function avisarStockBajo() {
+  try {
+    const r = await api.stockBajo();
+    const a = document.getElementById('enlace-inv');
+    a.textContent = r.total ? `Inventario ⚠ ${r.total} por reponer` : 'Inventario';
+    a.style.color = r.total ? 'var(--aviso)' : '';
+    a.style.fontWeight = r.total ? '700' : '';
+  } catch { /* sin indicador */ }
+}
+
 // ---------- Arranque ----------
 alCambiar(pintarTicket);
 async function iniciar() {
@@ -155,12 +166,13 @@ async function iniciar() {
     venta.pctMayoreo = cfg.mayoreo_porcentaje;
     if (cfg.modo_impresora !== 'real') avisar(`Impresora en modo simulación (${cfg.modo_impresora})`, 'aviso', 3000);
     await cargarCatalogo();
+    avisarStockBajo();
   } catch (e) {
     avisar(e.message, 'error', 0);
   }
   pintarTicket();
   entrada.focus();
   // Refresca el catálogo de vez en cuando (precios nuevos, productos dados de alta en otra pestaña).
-  setInterval(() => { if (!modalActivo()) cargarCatalogo().catch(() => {}); }, 120000);
+  setInterval(() => { if (!modalActivo()) { cargarCatalogo().catch(() => {}); avisarStockBajo(); } }, 120000);
 }
 iniciar();

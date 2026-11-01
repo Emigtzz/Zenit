@@ -31,6 +31,7 @@ export const api = {
   motivos: () => pedir('GET', '/inventario/motivos'),
   kardex: (params) => pedir('GET', '/inventario/kardex?' + new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v != null))),
   ajustar: (a) => pedir('POST', '/inventario/ajustes', a),
+  stockBajo: () => pedir('GET', '/inventario/stock-bajo'),
   verificarInventario: () => pedir('GET', '/inventario/verificar'),
   // catálogo (pantalla de administración)
   categorias: () => pedir('GET', '/categorias'),
