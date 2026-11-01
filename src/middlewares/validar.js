@@ -141,6 +141,8 @@ const confirmarImportacionSchema = z.object({
 const listaImportacionesSchema = z.object({ estado: z.enum(['pendiente', 'confirmada', 'descartada']).optional() });
 const equivalenciaQuerySchema = z.object({ proveedor_id: z.coerce.number().int().positive().optional(), clave: z.string().min(1).max(200).optional() });
 
+const estadisticasSchema = z.object({ dia: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato AAAA-MM-DD').optional() });
+
 const buscarSchema = z.object({ q: z.string().max(100).default('') });
 const listaProductosSchema = z.object({
   incluir_inactivos: z.enum(['0', '1']).default('0'),
@@ -148,7 +150,7 @@ const listaProductosSchema = z.object({
 });
 
 module.exports = { validar, categoriaSchema, productoSchema, ventaSchema, buscarSchema, listaProductosSchema, ajusteSchema, kardexSchema,
-  confirmarImportacionSchema, listaImportacionesSchema, equivalenciaQuerySchema,
+  estadisticasSchema, confirmarImportacionSchema, listaImportacionesSchema, equivalenciaQuerySchema,
   proveedorSchema, compraSchema, anularCompraSchema, listaComprasSchema, listaProveedoresSchema,
   abrirCajaSchema, movimientoCajaSchema, cerrarCajaSchema, listaCortesSchema,
   loginSchema, setupSchema, usuarioNuevoSchema, usuarioEditarSchema, restablecerSchema, cambioContrasenaSchema };

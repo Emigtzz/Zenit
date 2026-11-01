@@ -1,0 +1,60 @@
+/* Gráficas compartidas (caja y app del dueño). Colores = roles; claro/oscuro se cambia en UN lugar. Paleta validada con validate_palette.js */
+:root {
+  --viz-serie: #2a78d6;      /* serie 1 (azul) */
+  --viz-contexto: #898781;   /* lo que NO es el foco: gris */
+  --viz-grid: #e1e0d9; --viz-base: #c3c2b7;
+  --viz-t1: #0b0b0b; --viz-t2: #52514e; --viz-t3: #898781;
+  --viz-sup: #fcfcfb; --viz-borde: rgba(11,11,11,.10);
+  --viz-bien: #006300; --viz-mal: #d03b3b; --viz-aviso: #fab219;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    --viz-serie: #3987e5; --viz-grid: #2c2c2a; --viz-base: #383835; --viz-t1: #f0efec; --viz-t2: #c3c2b7; --viz-sup: #1a1a19;
+    --viz-borde: rgba(255,255,255,.10); --viz-bien: #0ca30c;
+  }
+}
+:root[data-theme="dark"] { --viz-serie: #3987e5; --viz-grid: #2c2c2a; --viz-base: #383835; --viz-t1: #f0efec; --viz-t2: #c3c2b7; --viz-sup: #1a1a19; --viz-borde: rgba(255,255,255,.10); --viz-bien: #0ca30c; }
+
+.viz-tarjeta { background: var(--viz-sup); border: 1px solid var(--viz-borde); border-radius: 12px; padding: 16px; color: var(--viz-t1); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+.viz-tarjeta h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.viz-nota { margin: 2px 0 10px; font-size: 12px; color: var(--viz-t2); }
+.viz-zona { position: relative; min-height: 40px; transition: opacity .15s; }
+.viz-zona.cargando { opacity: .5; }
+.viz-vacio { padding: 28px 0; text-align: center; color: var(--viz-t3); font-size: 14px; }
+.viz-toggle { margin-top: 8px; border: 0; background: transparent; color: var(--viz-t2); font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; padding: 2px 0; }
+
+.viz-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.viz-svg text { font-family: inherit; font-size: 11px; fill: var(--viz-t3); }
+.viz-svg .viz-valor { fill: var(--viz-t1); font-weight: 600; }
+.viz-svg .viz-grid { stroke: var(--viz-grid); stroke-width: 1; }
+.viz-svg .viz-base { stroke: var(--viz-base); stroke-width: 1; }
+.viz-svg .viz-barra { fill: var(--viz-serie); transition: opacity .1s; }
+.viz-svg .viz-barra.contexto { fill: var(--viz-contexto); opacity: .55; }
+.viz-svg .viz-hit { fill: transparent; cursor: default; outline: none; }
+.viz-svg .viz-hit:hover + .viz-barra, .viz-svg .viz-hit:focus + .viz-barra { opacity: 1; filter: brightness(1.12); }
+.viz-svg .viz-hit:focus-visible { stroke: var(--viz-t2); stroke-width: 1; }
+
+.viz-filas { display: grid; gap: 10px; }
+.viz-fila { display: grid; grid-template-columns: minmax(90px, 36%) 1fr; gap: 10px; align-items: center; outline: none; border-radius: 6px; padding: 2px 0; }
+.viz-fila:hover, .viz-fila:focus-visible { background: color-mix(in srgb, var(--viz-serie) 7%, transparent); }
+.viz-fila .nombre { font-size: 13px; color: var(--viz-t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.viz-fila .pista { display: flex; align-items: center; height: 16px; min-width: 0; }
+/* La barra mide (carril − 84 px) × proporción: SIEMPRE queda espacio al final para su cifra, así nunca se pisan ni se recorta nada */
+.viz-fila .barra { flex: none; height: 12px; width: max(2px, calc((100% - 84px) * var(--p, 0))); background: var(--viz-serie); border-radius: 0 4px 4px 0; }
+.viz-fila .cifra { flex: none; padding-left: 6px; font-size: 12px; font-weight: 600; color: var(--viz-t1); white-space: nowrap; }
+
+.viz-tip { position: absolute; z-index: 20; pointer-events: none; background: var(--viz-sup); color: var(--viz-t1); border: 1px solid var(--viz-borde); border-radius: 8px; padding: 6px 10px; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.18); white-space: nowrap; transform: translate(-50%, -100%); }
+.viz-tip b { display: block; font-size: 14px; }
+.viz-tip span { color: var(--viz-t2); }
+
+table.viz-tabla { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+table.viz-tabla th { text-align: left; font-weight: 600; color: var(--viz-t2); border-bottom: 1px solid var(--viz-base); padding: 4px 6px; }
+table.viz-tabla td { padding: 4px 6px; border-bottom: 1px solid var(--viz-grid); color: var(--viz-t1); }
+table.viz-tabla td.num, table.viz-tabla th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Cifras (stat tiles y hero) */
+.viz-hero { font-size: clamp(44px, 9vw, 56px); font-weight: 700; line-height: 1.05; letter-spacing: -.01em; color: var(--viz-t1); }
+.viz-etq { font-size: 13px; color: var(--viz-t2); }
+.viz-valor { font-size: 26px; font-weight: 650; color: var(--viz-t1); line-height: 1.15; }
+.viz-delta { font-size: 12px; margin-top: 2px; color: var(--viz-t2); }
+.viz-delta.sube { color: var(--viz-bien); } .viz-delta.baja { color: var(--viz-mal); }

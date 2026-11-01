@@ -2,6 +2,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const { validarZona } = require('./utils/zonaHoraria');
+
 const raiz = path.join(__dirname, '..');
 const envPath = path.join(raiz, '.env');
 // process.loadEnvFile viene incluido en Node 22: no necesitamos la librería dotenv.
@@ -37,6 +39,8 @@ const config = {
     columnas: entero('PRINTER_COLUMNS', 48, { min: 20, max: 80 }),
     carpetaTickets: path.join(raiz, 'data', 'tickets'),
   },
+  // "Hoy" es el día de la TIENDA, no el de UTC ni el del servidor.
+  zonaHoraria: validarZona(process.env.NEGOCIO_ZONA_HORARIA || 'America/Mexico_City'),
   // Importación de facturas (fase 3)
   costoIncluyeImpuestos: (process.env.COSTO_INCLUYE_IMPUESTOS ?? 'true').toLowerCase() !== 'false',
   carpetaFacturas: path.join(raiz, 'data', 'facturas'),

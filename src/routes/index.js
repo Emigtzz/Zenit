@@ -8,7 +8,7 @@ const v = require('../middlewares/validar');
 //   público     : /auth/estado, /auth/login, /auth/setup
 //   cajero+dueño: vender, consultar catálogo (sin costos), stock bajo, su propia contraseña
 //   solo dueño  : escribir catálogo, ajustes y kárdex, usuarios
-module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl: ic, authCtrl: ac, cajaCtrl: cc, compraCtrl: kc, importacionCtrl: mc, mw }) {
+module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl: ic, authCtrl: ac, cajaCtrl: cc, compraCtrl: kc, importacionCtrl: mc, estadisticasCtrl: ec, mw }) {
   const r = Router();
   const dueno = mw.requerirRol('dueño');
 
@@ -60,6 +60,9 @@ module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl
   r.get('/compras/producto/:id', dueno, kc.historialProducto);
   r.get('/compras/:id', dueno, kc.obtener);
   r.post('/compras/:id/anular', dueno, v.validar(v.anularCompraSchema), kc.anular);
+
+  // Estadísticas (solo dueño: muestran totales del negocio)
+  r.get('/estadisticas', dueno, v.validar(v.estadisticasSchema, 'query'), ec.resumen);
 
   // Importación de facturas (solo dueño). El archivo viaja CRUDO en el cuerpo (máx. 8 MB); nada se registra hasta confirmar.
   r.get('/importaciones/config', dueno, mc.config);

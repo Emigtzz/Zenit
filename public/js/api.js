@@ -60,6 +60,7 @@ export const api = {
   compras: (f) => pedir('GET', '/compras?' + new URLSearchParams(Object.entries(f).filter(([, v]) => v !== '' && v != null))),
   compra: (id) => pedir('GET', `/compras/${id}`),
   anularCompra: (id, motivo) => pedir('POST', `/compras/${id}/anular`, { motivo }),
+  estadisticas: (dia) => pedir('GET', '/estadisticas' + (dia ? `?dia=${dia}` : '')),
   estadoCaja: () => pedir('GET', '/caja/estado'),
   abrirCaja: (fondo_inicial) => pedir('POST', '/caja/abrir', { fondo_inicial }),
   resumenCaja: () => pedir('GET', '/caja/resumen'),

@@ -22,6 +22,8 @@ const compraController = require('./controllers/compraController');
 const facturaIA = require('./services/facturaIA');
 const importacionService = require('./services/importacionService');
 const importacionController = require('./controllers/importacionController');
+const estadisticasService = require('./services/estadisticasService');
+const estadisticasController = require('./controllers/estadisticasController');
 const rutas = require('./routes');
 const { noEncontrada, manejarErrores } = require('./middlewares/errores');
 
@@ -33,6 +35,9 @@ function crearApp({ db, config, impresora, iaServicio }) {
   const imp = impresora || impresoraService(config);
   const auth = authService(db);
   const mw = authMiddlewares(auth);
+  const cortes = corteService(db);
+  const inventario = inventarioService(db);
+  const estadisticas = estadisticasService(db, { zona: config.zonaHoraria || 'America/Mexico_City', corte: cortes, inventario });
   const proveedores = proveedorService(db);
   const compras = compraService(db, busqueda);
   const importaciones = importacionService(db, {
@@ -46,16 +51,19 @@ function crearApp({ db, config, impresora, iaServicio }) {
   app.use('/api', mw.mismoOrigen, mw.cargarSesion);
   app.use('/api', rutas({
     mw,
-    cajaCtrl: cajaController(corteService(db), imp),
+    cajaCtrl: cajaController(cortes, imp),
+    estadisticasCtrl: estadisticasController(estadisticas),
     compraCtrl: compraController(compras, proveedores),
     importacionCtrl: importacionController(importaciones, { costoIncluyeImpuestos: config.costoIncluyeImpuestos !== false }),
     authCtrl: authController({ auth, usuarios: usuarioService(db), config, mw, vidaSesionMs: auth.VIDA_SESION_MS }),
     catalogoCtrl: catalogoController(catalogo, busqueda),
     ventaCtrl: ventaController(ventas, imp, config),
-    inventarioCtrl: inventarioController(inventarioService(db), busqueda),
+    inventarioCtrl: inventarioController(inventario, busqueda),
   }));
   app.use('/api', noEncontrada);
   app.use(express.static(path.join(config.raiz, 'public')));
+  // Código compartido con la app del celular (gráficas): son archivos estáticos sin datos ni secretos.
+  app.use('/pwa', express.static(path.join(config.raiz, 'pwa')));
   app.use(manejarErrores);
   return app;
 }

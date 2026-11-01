@@ -613,3 +613,39 @@ test('importación: descartar borra el borrador; es solo del dueño y exige sesi
     assert.equal((await s.pedir('POST', `/importaciones/${id}/descartar`)).json.error.codigo, 'YA_RESUELTA');
   } finally { s.cerrar(); }
 });
+
+// ================= Estadísticas =================
+test('GET /estadisticas: solo dueño, con día opcional validado, ventas reales reflejadas y caja/stock bajo', async () => {
+  const s = await levantar();
+  try {
+    await s.pedir('POST', '/ventas', { items: [{ producto_id: 1, cantidad: 2 }], pagos: [{ metodo: 'efectivo', monto: 5000 }] });
+    await s.pedir('POST', '/ventas', { items: [{ producto_id: 2, cantidad: 1 }], pagos: [{ metodo: 'tarjeta', monto: 1200 }] });
+    const r = await s.pedir('GET', '/estadisticas');
+    assert.equal(r.status, 200);
+    assert.equal(r.json.resumen.num_ventas, 2);
+    assert.equal(r.json.resumen.total, 3700 + 1200);
+    assert.deepEqual(r.json.resumen.por_metodo, { efectivo: 3700, tarjeta: 1200, transferencia: 0 });
+    assert.equal(r.json.resumen.por_hora.length, 24);
+    assert.equal(r.json.serie.length, 30);
+    assert.equal(r.json.top.por_piezas[0].piezas, 2);
+    assert.equal(r.json.negocio.caja.abierta, true);
+    assert.equal(r.json.zona_horaria, 'America/Mexico_City');
+    assert.match(r.json.hoy, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal((await s.pedir('GET', '/estadisticas?dia=2020-01-01')).json.resumen.num_ventas, 0);
+    assert.equal((await s.pedir('GET', '/estadisticas?dia=ayer')).status, 400);
+    assert.equal((await s.pedir('GET', '/estadisticas?dia=2026-02-30')).status, 400);
+    const caj = await s.como('Beto', 'cajero');
+    assert.equal((await caj('GET', '/estadisticas')).status, 403);
+    assert.equal((await s.crudo('GET', '/estadisticas')).status, 401);
+  } finally { s.cerrar(); }
+});
+
+test('la carpeta /pwa (gráficas compartidas) se sirve sin sesión y no expone nada fuera de ella', async () => {
+  const s = await levantar({ sinSesion: true });
+  try {
+    const base = s.base.replace(/\/api$/, '');
+    assert.equal((await fetch(`${base}/pwa/lib/graficas.js`)).status, 200);
+    assert.equal((await fetch(`${base}/pwa/../package.json`)).status, 404);
+    assert.equal((await fetch(`${base}/pwa/%2e%2e/.env`)).status, 404);
+  } finally { s.cerrar(); }
+});

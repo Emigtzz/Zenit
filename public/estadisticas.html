@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Estadísticas · Zenit POS</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/pwa/lib/graficas.css">
+  <style>
+    body { overflow: auto; }
+    .pagina { max-width: 1200px; margin: 0 auto; padding: 16px; width: 100%; }
+    .filtros { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .filtros input[type=date] { font-size: 15px; padding: 6px 9px; border: 2px solid var(--borde); border-radius: 8px; background: var(--panel); color: var(--texto); }
+    .filtros .btn { padding: 6px 14px; font-size: 14px; }
+    .rejilla-stats { display: grid; gap: 14px; grid-template-columns: repeat(12, 1fr); }
+    .c12 { grid-column: span 12; } .c8 { grid-column: span 8; } .c6 { grid-column: span 6; } .c4 { grid-column: span 4; } .c3 { grid-column: span 3; }
+    @media (max-width: 900px) { .c8, .c6, .c4, .c3 { grid-column: span 12; } }
+    .kpis { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+    .viz-tarjeta.tile { padding: 12px 16px; }
+    .lateral { display: grid; gap: 14px; align-content: start; }
+    .linea { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 3px 0; }
+    .estado { font-weight: 650; }
+    .bien { color: var(--viz-bien); } .mal { color: var(--viz-mal); }
+    .conmutador { display: inline-flex; gap: 0; border: 1px solid var(--viz-base); border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+    .conmutador button { border: 0; background: transparent; color: var(--viz-t2); padding: 4px 12px; font: inherit; font-size: 12px; cursor: pointer; }
+    .conmutador button[aria-pressed=true] { background: var(--viz-serie); color: #fff; }
+  </style>
+</head>
+<body>
+  <header class="barra">
+    <h1>Estadísticas</h1>
+    <span class="atajos" id="subtitulo">Ventas del negocio</span>
+    <a class="enlace" href="/cortes.html">Cortes</a>
+    <a class="enlace" href="/inventario.html">Inventario</a>
+    <a class="enlace" href="/">← Volver a la caja</a>
+  </header>
+  <div class="pagina">
+    <div class="filtros" role="group" aria-label="Día a consultar">
+      <button class="btn sec" id="f-hoy" type="button">Hoy</button>
+      <button class="btn sec" id="f-ayer" type="button">Ayer</button>
+      <input type="date" id="f-dia" aria-label="Elegir día">
+      <span id="actualizado" class="ayuda"></span>
+    </div>
+    <div id="error" class="adv" hidden style="background:var(--error);color:#fff;border-radius:10px;padding:8px 12px;margin-bottom:10px"></div>
+
+    <div class="rejilla-stats">
+      <section class="viz-tarjeta c8">
+        <div class="viz-etq" id="hero-etq">Ventas</div>
+        <div class="viz-hero" id="hero-valor">$0.00</div>
+        <div class="viz-delta" id="hero-d1"></div>
+        <div class="viz-delta" id="hero-d2"></div>
+      </section>
+      <div class="kpis c4" id="kpis" style="align-content:start"></div>
+
+      <div class="c8" id="g-hora"></div>
+      <div class="lateral c4">
+        <section class="viz-tarjeta"><h3>Caja</h3><div id="caja"></div></section>
+        <section class="viz-tarjeta"><h3>Stock bajo</h3><div id="stock"></div></section>
+      </div>
+
+      <div class="c8" id="g-serie"></div>
+      <div class="c4" id="g-metodo"></div>
+
+      <div class="c12" id="g-top"></div>
+    </div>
+  </div>
+  <script type="module" src="/js/estadisticas.js"></script>
+</body>
+</html>

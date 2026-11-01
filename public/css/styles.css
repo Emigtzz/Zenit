@@ -87,3 +87,10 @@ tr.flash td { animation: flash .5s; }
 .pick li.sel { background: var(--sel); }
 .pick .quitar { position: absolute; right: 8px; top: 8px; border: 0; background: transparent; color: var(--suave); cursor: pointer; font-size: 18px; }
 .etq { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--borde); }
+
+/* Encabezado que se acomoda en pantallas angostas (celular/tablet vertical) */
+@media (max-width: 760px) {
+  .barra { flex-wrap: wrap; gap: 6px 14px; }
+  .barra .atajos { display: none; }
+  .barra h1 { flex-basis: 100%; }
+}
