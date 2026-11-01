@@ -17,9 +17,14 @@
       <span><kbd>+</kbd><kbd>−</kbd> Cantidad</span>
       <span><kbd>Supr</kbd> Quitar</span>
       <span><kbd>Esc</kbd> Cancelar venta</span>
+      <span><kbd>F9</kbd> Cambiar usuario</span>
     </nav>
-    <a class="enlace" id="enlace-inv" href="/inventario.html" tabindex="-1">Inventario</a>
-    <a class="enlace" href="/catalogo.html" tabindex="-1">Catálogo</a>
+    <a class="enlace solo-dueno" href="/usuarios.html" tabindex="-1" hidden>Usuarios</a>
+    <a class="enlace solo-dueno" id="enlace-inv" href="/inventario.html" tabindex="-1" hidden>Inventario</a>
+    <a class="enlace solo-dueno" href="/catalogo.html" tabindex="-1" hidden>Catálogo</a>
+    <span id="quien" class="quien"></span>
+    <button type="button" class="enlace-btn" id="btn-pass" tabindex="-1">Contraseña</button>
+    <button type="button" class="enlace-btn" id="btn-salir" tabindex="-1">Salir</button>
     <div id="reloj" aria-hidden="true"></div>
   </header>
 

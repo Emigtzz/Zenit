@@ -37,16 +37,43 @@ Al terminar, el seed imprime algunos códigos de barras de ejemplo para probar.
 npm start
 ```
 
-Abre <http://localhost:3000>. Para el modo kiosco en la caja:
+Abre <http://localhost:3000>. **La primera vez** no hay usuarios: la pantalla de entrada te pide crear la cuenta del dueño (nombre y contraseña de 8+ caracteres). Después, el dueño crea a los cajeros en `/usuarios.html`.
+
+Para el modo kiosco en la caja:
 
 ```bat
 "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk http://localhost:3000
 ```
 
-Otras pantallas:
+Otras pantallas (solo dueño):
 
 - Catálogo (alta, edición y desactivación): <http://localhost:3000/catalogo.html>
 - Inventario (ajustes y kárdex): <http://localhost:3000/inventario.html>
+- Usuarios: <http://localhost:3000/usuarios.html>
+
+## Usuarios y roles
+
+Todo el sistema pide iniciar sesión. En la pantalla de entrada se elige el nombre y se teclea la contraseña o PIN (la caja recuerda al último usuario: basta escribir el PIN y Enter). **`F9` cambia de usuario** (no se permite con una venta a medias). Cada venta, ajuste y movimiento de kárdex guarda **quién lo hizo**, y el ticket dice `Atendió: …`.
+
+| | Cajero | Dueño |
+|---|:-:|:-:|
+| Vender, buscar productos, reimprimir tickets | ✅ | ✅ |
+| Ver stock bajo | ✅ | ✅ |
+| Cambiar su propia contraseña | ✅ | ✅ |
+| Ver **costos** de los productos | ❌ | ✅ |
+| Alta/edición/desactivación de catálogo y precios | ❌ | ✅ |
+| Ajustes de inventario y kárdex | ❌ | ✅ |
+| Gestionar usuarios | ❌ | ✅ |
+
+Contraseñas: **dueño** mínimo 8 caracteres; **cajero** mínimo 4 (puede ser un PIN). Se guardan con `scrypt` y sal propia, nunca en claro. Tras **5 intentos fallidos** el usuario se bloquea 1 minuto. Las sesiones duran 12 h de inactividad. Desactivar a alguien, cambiarle el rol o restablecerle la contraseña cierra sus sesiones abiertas. Siempre debe quedar al menos un dueño activo.
+
+**¿Se le olvidó la contraseña al dueño?** Desde una terminal en la computadora de la caja:
+
+```bash
+npm run usuarios -- listar
+npm run usuarios -- contrasena "Nombre"      # pide la nueva contraseña sin mostrarla
+npm run usuarios -- crear-dueno "Nombre"
+```
 
 ## Inventario: kárdex y ajustes
 
@@ -127,10 +154,12 @@ Cubren: cálculo de totales y descuento, cambio, descuento de stock y kárdex, *
 
 ## API (resumen)
 
-Todos los montos son **enteros en centavos**. El servidor recalcula precios, descuento, total y cambio; el cliente solo envía qué se vende y cómo se paga.
+Todas las rutas excepto `/api/auth/estado`, `/api/auth/login` y `/api/auth/setup` exigen sesión (cookie `HttpOnly`). Todos los montos son **enteros en centavos**. El servidor recalcula precios, descuento, total y cambio; el cliente solo envía qué se vende y cómo se paga.
 
 | Método y ruta | Uso |
 |---|---|
+| `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/yo`, `POST /api/auth/contrasena` | Sesión y contraseña propia |
+| `GET/POST /api/usuarios`, `PUT /api/usuarios/:id`, `POST /api/usuarios/:id/contrasena` | Gestión de usuarios (dueño) |
 | `GET /api/productos/codigo/:codigo` | Barras o código corto (404 si no existe) |
 | `GET /api/productos/buscar?q=` | Búsqueda tolerante a errores |
 | `GET /api/productos/botones-rapidos` | Botones por categoría |
@@ -156,7 +185,7 @@ Detalle y decisiones en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
 ## Roadmap
 
 1. ✅ Venta básica (este README)
-2. Inventario y control: ✅ kárdex, ajustes y stock bajo · ⏳ corte de caja, usuarios y permisos, compras manuales
+2. Inventario y control: ✅ kárdex, ajustes, stock bajo, usuarios y permisos · ⏳ corte de caja, compras manuales
 3. Importación de facturas (XML CFDI)
 4. Estadísticas, sincronización a Supabase y PWA del dueño
 5. Puesta en marcha: catálogo real, etiquetas, respaldos y capacitación

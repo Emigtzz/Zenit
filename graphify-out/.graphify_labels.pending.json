@@ -1,14 +1,22 @@
 {
-  "0": "api.test.js",
+  "0": "config.js",
   "1": "main.js",
   "2": "package.json",
-  "3": "ErrorApp",
+  "3": "productoRepository.js",
   "4": "impresoraService.js",
   "5": "Zenit POS — Luna de precios",
   "6": "catalogo.js",
-  "7": "api.test.js",
-  "8": "productoRepository.js",
-  "9": "categoriaRepository.js",
+  "7": "busqueda.test.js",
+  "8": "ErrorApp",
+  "9": "catalogoService.js",
   "10": "validar.js",
-  "11": "inventario.js"
+  "11": "inventario.js",
+  "12": "app.js",
+  "13": "auth.test.js",
+  "14": "migrate.js",
+  "15": "busquedaService.js",
+  "16": "login.js",
+  "17": "config.test.js",
+  "18": "api.test.js",
+  "19": "seed.js"
 }

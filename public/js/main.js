@@ -6,6 +6,8 @@ import { abrirBusqueda } from './busqueda.js';
 import { abrirCobro } from './cobro.js';
 import { formatear } from './dinero.js';
 
+let usuarioActual = null;
+
 const entrada = document.getElementById('codigo');
 let porCodigo = new Map();   // código de barras o corto -> producto (búsqueda instantánea, sin ir al servidor)
 let botones = [];
@@ -119,6 +121,40 @@ async function vigilarImpresion(id, nodo) {
   }
 }
 
+// F9: cambiar de usuario (cierra la sesión). No se permite con una venta a medias para no mezclar cajeros.
+async function salir() {
+  if (venta.lineas.length) { avisar('Termina o cancela la venta (Esc) antes de cambiar de usuario', 'error', 3000); return; }
+  try { await api.logout(); } catch { /* aunque falle, vamos al login */ }
+  location.href = '/login.html';
+}
+document.getElementById('btn-salir').addEventListener('click', salir);
+
+function abrirCambioContrasena() {
+  if (modalActivo()) return;
+  const campo = (rotulo, auto) => { const i = el('input', { type: 'password', autocomplete: auto }); return [i, el('div', { class: 'campo' }, el('label', { texto: rotulo }), i)]; };
+  const [actual, fa] = campo('Contraseña actual', 'current-password');
+  const [nueva, fn] = campo('Nueva contraseña', 'new-password');
+  const [repite, fr] = campo('Repite la nueva', 'new-password');
+  const msg = el('p', { class: 'cambio falta', style: 'font-size:16px' });
+  async function guardar() {
+    if (nueva.value !== repite.value) { msg.textContent = 'La nueva contraseña no coincide'; return; }
+    try {
+      await api.cambiarContrasena({ actual: actual.value, nueva: nueva.value });
+      cerrarModal(); avisar('Contraseña actualizada', 'ok', 2500);
+    } catch (e) { msg.textContent = e.message; }
+  }
+  abrirModal({
+    contenido: el('div', {}, el('h2', { texto: 'Cambiar mi contraseña' }), fa, fn, fr, msg,
+      el('div', { class: 'fila-btn' },
+        el('button', { type: 'button', tabindex: '-1', class: 'btn sec', onclick: () => cerrarModal() }, 'Esc · Cancelar'),
+        el('button', { type: 'button', tabindex: '-1', class: 'btn', onclick: guardar }, 'Enter · Guardar'))),
+    alCerrar: enfocar,
+    onKey(e) { if (e.key === 'Escape') { e.preventDefault(); cerrarModal(); } else if (e.key === 'Enter') { e.preventDefault(); guardar(); } },
+  });
+  actual.focus();
+}
+document.getElementById('btn-pass').addEventListener('click', abrirCambioContrasena);
+
 function cobrar() {
   if (!venta.lineas.length) { avisar('Agrega productos antes de cobrar', 'aviso', 2000); return; }
   abrirCobro({ alCobrar: mostrarExito });
@@ -129,6 +165,7 @@ document.addEventListener('keydown', (e) => {
   const m = modalActivo();
   if (m) { m.onKey?.(e); return; }
   switch (e.key) {
+    case 'F9': e.preventDefault(); salir(); return;
     case 'F2': e.preventDefault(); abrirBusqueda({ alElegir: (p) => { agregarProducto(p); enfocar(); } }); return;
     case 'F4': e.preventDefault(); cobrar(); return;
     case 'F8': e.preventDefault(); alternarMayoreo(); avisar(venta.mayoreo ? `Mayoreo activado (${venta.pctMayoreo}%)` : 'Mayoreo desactivado', 'ok', 1500); return;
@@ -160,19 +197,22 @@ alCambiar(pintarTicket);
 async function iniciar() {
   iniciarReloj();
   try {
+    usuarioActual = (await api.yo()).usuario; // si no hay sesión, api.js redirige al login
+    document.getElementById('quien').textContent = `👤 ${usuarioActual.nombre}`;
+    if (usuarioActual.rol === 'dueño') document.querySelectorAll('.solo-dueno').forEach((n) => (n.hidden = false));
     const cfg = await api.config();
     document.getElementById('negocio').textContent = cfg.negocio;
     document.title = `Caja · ${cfg.negocio}`;
     venta.pctMayoreo = cfg.mayoreo_porcentaje;
     if (cfg.modo_impresora !== 'real') avisar(`Impresora en modo simulación (${cfg.modo_impresora})`, 'aviso', 3000);
     await cargarCatalogo();
-    avisarStockBajo();
+    if (usuarioActual.rol === 'dueño') avisarStockBajo();
   } catch (e) {
     avisar(e.message, 'error', 0);
   }
   pintarTicket();
   entrada.focus();
   // Refresca el catálogo de vez en cuando (precios nuevos, productos dados de alta en otra pestaña).
-  setInterval(() => { if (!modalActivo()) { cargarCatalogo().catch(() => {}); avisarStockBajo(); } }, 120000);
+  setInterval(() => { if (!modalActivo()) { cargarCatalogo().catch(() => {}); if (usuarioActual?.rol === 'dueño') avisarStockBajo(); } }, 120000);
 }
 iniciar();

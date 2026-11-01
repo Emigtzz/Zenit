@@ -14,11 +14,33 @@ async function pedir(metodo, ruta, cuerpo) {
   const datos = texto ? JSON.parse(texto) : null;
   if (!res.ok) {
     const e = datos?.error || {};
+    // Sesión vencida o no iniciada: a la pantalla de login, y de ahí se regresa a donde estaba el usuario.
+    if (res.status === 401 && e.codigo === 'SESION_REQUERIDA' && !location.pathname.startsWith('/login')) {
+      location.href = '/login.html?volver=' + encodeURIComponent(location.pathname);
+      return new Promise(() => {}); // la página se está yendo: no sigas ejecutando nada
+    }
     throw Object.assign(new Error(e.mensaje || `Error ${res.status}`), { codigo: e.codigo, detalles: e.detalles, status: res.status });
   }
   return datos;
 }
+// Páginas solo para el dueño: si entra un cajero lo regresamos a la caja.
+export async function requerirDueno() {
+  const { usuario } = await api.yo();
+  if (usuario.rol !== 'dueño') { location.href = '/'; return new Promise(() => {}); }
+  return usuario;
+}
+
 export const api = {
+  estadoAuth: () => pedir('GET', '/auth/estado'),
+  setup: (d) => pedir('POST', '/auth/setup', d),
+  login: (d) => pedir('POST', '/auth/login', d),
+  logout: () => pedir('POST', '/auth/logout'),
+  yo: () => pedir('GET', '/auth/yo'),
+  cambiarContrasena: (d) => pedir('POST', '/auth/contrasena', d),
+  usuarios: () => pedir('GET', '/usuarios'),
+  crearUsuario: (u) => pedir('POST', '/usuarios', u),
+  actualizarUsuario: (id, u) => pedir('PUT', `/usuarios/${id}`, u),
+  restablecerContrasena: (id, contrasena) => pedir('POST', `/usuarios/${id}/contrasena`, { contrasena }),
   config: () => pedir('GET', '/config'),
   productos: () => pedir('GET', '/productos'),
   botonesRapidos: () => pedir('GET', '/productos/botones-rapidos'),

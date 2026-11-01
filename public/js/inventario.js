@@ -1,6 +1,7 @@
-import { api } from './api.js';
+import { api, requerirDueno } from './api.js';
 import { el } from './modal.js';
 
+await requerirDueno();
 const $ = (id) => document.getElementById(id);
 const MODOS = [
   ['entrada', '➕ Entrada (sumar)', 'Piezas a sumar'],
@@ -111,7 +112,8 @@ async function consultar() {
     el('td', {}, el('span', { class: 'etq', texto: f.tipo })),
     el('td', { class: 'num ' + (f.cantidad > 0 ? 'mas' : 'menos'), texto: (f.cantidad > 0 ? '+' : '') + f.cantidad }),
     el('td', { class: 'num', texto: String(f.saldo) }),
-    el('td', { texto: [f.motivo && nombreMotivo(f.motivo), f.nota, !f.motivo && f.referencia].filter(Boolean).join(' · ') }))));
+    el('td', { texto: [f.motivo && nombreMotivo(f.motivo), f.nota, !f.motivo && f.referencia].filter(Boolean).join(' · ') }),
+    el('td', { texto: f.usuario_nombre || '—' }))));
   const hasta = Math.min(r.total, r.pagina * r.por_pagina);
   $('k-info').textContent = r.total ? `${(r.pagina - 1) * r.por_pagina + 1}–${hasta} de ${r.total} movimientos` : 'Sin movimientos con esos filtros';
   $('k-ant').disabled = pagina <= 1; $('k-sig').disabled = hasta >= r.total;

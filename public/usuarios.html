@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Usuarios · Zenit POS</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { overflow: auto; }
+    .pagina { max-width: 900px; margin: 0 auto; padding: 16px; width: 100%; }
+    .herr { display: flex; justify-content: space-between; align-items: center; margin: 12px 0; gap: 10px; flex-wrap: wrap; }
+    table.cat { background: var(--panel); border-radius: 10px; overflow: hidden; } table.cat td, table.cat th { font-size: 15px; }
+    tr.inactivo td { opacity: .5; }
+    .etq { display: inline-block; font-size: 12px; padding: 1px 10px; border-radius: 999px; background: var(--borde); }
+    .etq.dueno { background: var(--acento); color: #fff; }
+    dialog { border: 0; border-radius: 14px; padding: 20px; width: min(460px, 94vw); background: var(--panel); color: var(--texto); }
+    dialog::backdrop { background: rgba(2,6,23,.6); }
+    .rejilla label { font-size: 13px; color: var(--suave); display: block; margin: 10px 0 3px; }
+    .rejilla input[type=text], .rejilla input[type=password], .rejilla select { width: 100%; font-size: 17px; padding: 8px 10px; border: 2px solid var(--borde); border-radius: 8px; background: var(--fondo); color: var(--texto); }
+    .err { color: var(--error); font-weight: 600; min-height: 1.4em; }
+    .btn.peq { padding: 4px 10px; font-size: 13px; }
+    .permisos { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 12px 16px; margin-top: 16px; font-size: 14px; color: var(--suave); }
+  </style>
+</head>
+<body>
+  <header class="barra">
+    <h1>Usuarios</h1>
+    <span class="atajos">Quién puede entrar y qué puede hacer</span>
+    <a class="enlace" href="/inventario.html">Inventario</a>
+    <a class="enlace" href="/catalogo.html">Catálogo</a>
+    <a class="enlace" href="/">← Volver a la caja</a>
+  </header>
+  <div class="pagina">
+    <div class="herr"><span id="resumen" class="ayuda"></span><button class="btn" id="nuevo" type="button">+ Nuevo usuario</button></div>
+    <table class="cat">
+      <thead><tr><th>Nombre</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+      <tbody id="filas"></tbody>
+    </table>
+    <div class="permisos">
+      <b>Qué puede hacer cada rol.</b>
+      <b>Cajero:</b> vender, buscar productos, ver el stock bajo, reimprimir tickets y cambiar su propia contraseña (no ve costos).
+      <b>Dueño:</b> todo lo anterior, más catálogo y precios, ajustes y kárdex de inventario, y gestionar usuarios.
+    </div>
+  </div>
+
+  <dialog id="dlg">
+    <form id="form" method="dialog" class="rejilla" autocomplete="off">
+      <h2 id="titulo">Usuario</h2>
+      <label for="u-nombre">Nombre *</label><input id="u-nombre" type="text" required minlength="2" maxlength="40">
+      <label for="u-rol">Rol</label><select id="u-rol"><option value="cajero">Cajero</option><option value="dueño">Dueño</option></select>
+      <div id="f-pass"><label for="u-pass">Contraseña o PIN * <span id="u-pista" class="ayuda"></span></label><input id="u-pass" type="password" autocomplete="new-password"></div>
+      <label id="f-activo"><input id="u-activo" type="checkbox" checked> Activo (puede entrar)</label>
+      <p class="err" id="err" role="alert"></p>
+      <div class="fila-btn"><button type="button" class="btn sec" id="cancelar">Cancelar</button><button type="submit" class="btn">Guardar</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-pass">
+    <form id="form-pass" method="dialog" class="rejilla" autocomplete="off">
+      <h2 id="titulo-pass">Restablecer contraseña</h2>
+      <label for="n-pass">Nueva contraseña o PIN</label><input id="n-pass" type="password" autocomplete="new-password" required>
+      <p class="ayuda">Se cerrarán las sesiones abiertas de esa persona.</p>
+      <p class="err" id="err-pass" role="alert"></p>
+      <div class="fila-btn"><button type="button" class="btn sec" id="cancelar-pass">Cancelar</button><button type="submit" class="btn">Guardar</button></div>
+    </form>
+  </dialog>
+  <script type="module" src="/js/usuarios.js"></script>
+</body>
+</html>

@@ -1,7 +1,9 @@
-import { api } from './api.js';
+import { api, requerirDueno } from './api.js';
+
 import { formatear, parsearPesos } from './dinero.js';
 import { el } from './modal.js';
 
+await requerirDueno();
 const $ = (id) => document.getElementById(id);
 let productos = [], categorias = [];
 let editandoProd = null, editandoCat = null;

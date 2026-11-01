@@ -46,3 +46,15 @@ Navegador (public/)  →  routes  →  controllers  →  services  →  reposito
 - **Verificación** (`/inventario/verificar`): detecta productos cuyo `stock` ≠ suma de sus movimientos.
 - **Pendiente con usuarios**: `usuario_id` ya se guarda (NULL hoy); los ajustes pasarán a requerir rol *dueño*.
 - **Stock bajo**: se calcula al consultar (sin tabla ni caché), así que siempre refleja el stock actual. `stock_minimo = 0` significa "sin mínimo": no alerta, salvo stock negativo. Orden: negativos (el más negativo primero), agotados y bajos por cercanía a cero respecto a su mínimo.
+
+## Fase 2 — Usuarios, sesiones y roles
+
+- **Contraseñas**: `scrypt` (incluido en Node) con sal aleatoria por usuario; el formato `scrypt$N$r$p$sal$hash` guarda sus parámetros, así se pueden endurecer sin romper hashes viejos. Comparación en tiempo constante; si el usuario no existe se calcula igual un hash para no delatarlo por el tiempo de respuesta.
+- **Sesiones en SQLite** (tabla `sesiones`), no en memoria: sobreviven a reinicios de la caja. Se guarda el **hash SHA-256 del token**; el token viaja en una cookie `HttpOnly; SameSite=Strict`. Vencen a las 12 h sin actividad (se renuevan ~1 vez/minuto para no escribir en la base en cada petición).
+- **Anti fuerza bruta**: 5 fallos → bloqueo de 1 minuto por usuario (en memoria).
+- **Anti CSRF**: `SameSite=Strict` + verificación de `Origin` en peticiones que modifican.
+- **Autorización por rol en las rutas** (`requerirRol`), no en el frontend: ocultar un botón es cosmética, la regla vive en el servidor. Los costos se eliminan de las respuestas al cajero.
+- **Reglas de usuarios**: nombres únicos sin distinguir mayúsculas; siempre queda un dueño activo; nadie se desactiva a sí mismo; desactivar/cambiar rol/restablecer cierra sesiones.
+- **Primer arranque**: sin usuarios, `/auth/setup` crea al dueño y deja de funcionar al existir cualquiera (no hay puerta trasera). El rescate es un script local (`scripts/usuarios.js`).
+- **Trazabilidad**: `usuario_id` se llena en `ventas` y `movimientos_inventario`; es la base del corte de caja por cajero.
+- **Límite conocido**: el servidor escucha solo en `127.0.0.1`, por lo que la protección se centra en separar roles en la misma máquina, no en exponerse a una red.

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar · Zenit POS</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { display: grid; place-items: center; overflow: auto; }
+    .tarjeta-login { background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 28px; width: min(480px, 94vw); box-shadow: 0 20px 60px rgba(0,0,0,.15); }
+    .tarjeta-login h1 { margin: 0 0 4px; font-size: 24px; } .sub { color: var(--suave); margin: 0 0 18px; }
+    .usuarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .usuarios button { border: 2px solid var(--borde); background: var(--fondo); color: var(--texto); border-radius: 12px; padding: 16px 8px; font: inherit; font-weight: 700; font-size: 17px; cursor: pointer; }
+    .usuarios button:focus, .usuarios button:hover { border-color: var(--acento); outline: none; }
+    label { display: block; font-size: 13px; color: var(--suave); margin: 12px 0 4px; }
+    input[type=password], input[type=text] { width: 100%; font-size: 22px; padding: 10px 12px; border: 2px solid var(--borde); border-radius: 10px; background: var(--fondo); color: var(--texto); }
+    input:focus { border-color: var(--acento); outline: none; }
+    .quien { font-size: 20px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+    .err { color: var(--error); font-weight: 600; min-height: 1.5em; margin: 8px 0 0; }
+    .ayuda a { color: var(--suave); }
+  </style>
+</head>
+<body>
+  <main class="tarjeta-login">
+    <h1 id="negocio">Zenit POS</h1>
+    <p class="sub" id="sub">Cargando…</p>
+
+    <section id="v-usuarios" hidden>
+      <div class="usuarios" id="lista"></div>
+    </section>
+
+    <form id="f-login" hidden autocomplete="off">
+      <div class="quien"><span id="quien"></span><a href="#" id="otro" class="ayuda">Cambiar</a></div>
+      <label for="pass">Contraseña o PIN</label>
+      <input id="pass" type="password" autocomplete="current-password" required>
+      <p class="err" id="err-login" role="alert"></p>
+      <div class="fila-btn"><button class="btn" type="submit">Entrar</button></div>
+    </form>
+
+    <form id="f-setup" hidden autocomplete="off">
+      <p class="ayuda">Primer uso: crea la cuenta del <b>dueño</b>. Es quien administra catálogo, inventario y usuarios.</p>
+      <label for="s-nombre">Tu nombre</label><input id="s-nombre" type="text" required minlength="2" maxlength="40">
+      <label for="s-pass">Contraseña (mínimo 8 caracteres)</label><input id="s-pass" type="password" autocomplete="new-password" required minlength="8">
+      <label for="s-pass2">Repite la contraseña</label><input id="s-pass2" type="password" autocomplete="new-password" required>
+      <p class="err" id="err-setup" role="alert"></p>
+      <div class="fila-btn"><button class="btn" type="submit">Crear dueño y entrar</button></div>
+    </form>
+  </main>
+  <script type="module" src="/js/login.js"></script>
+</body>
+</html>
