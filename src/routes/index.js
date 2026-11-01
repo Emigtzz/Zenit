@@ -8,7 +8,7 @@ const v = require('../middlewares/validar');
 //   público     : /auth/estado, /auth/login, /auth/setup
 //   cajero+dueño: vender, consultar catálogo (sin costos), stock bajo, su propia contraseña
 //   solo dueño  : escribir catálogo, ajustes y kárdex, usuarios
-module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl: ic, authCtrl: ac, cajaCtrl: cc, compraCtrl: kc, importacionCtrl: mc, estadisticasCtrl: ec, mw }) {
+module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl: ic, authCtrl: ac, cajaCtrl: cc, compraCtrl: kc, importacionCtrl: mc, estadisticasCtrl: ec, syncCtrl: yc, mw }) {
   const r = Router();
   const dueno = mw.requerirRol('dueño');
 
@@ -60,6 +60,10 @@ module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl
   r.get('/compras/producto/:id', dueno, kc.historialProducto);
   r.get('/compras/:id', dueno, kc.obtener);
   r.post('/compras/:id/anular', dueno, v.validar(v.anularCompraSchema), kc.anular);
+
+  // Sincronización con la nube: el estado lo ven todos (indicador de la caja); forzar un ciclo es del dueño
+  r.get('/sync/estado', yc.estado);
+  r.post('/sync/ahora', dueno, yc.ahora);
 
   // Estadísticas (solo dueño: muestran totales del negocio)
   r.get('/estadisticas', dueno, v.validar(v.estadisticasSchema, 'query'), ec.resumen);

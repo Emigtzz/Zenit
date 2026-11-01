@@ -24,11 +24,14 @@ const importacionService = require('./services/importacionService');
 const importacionController = require('./controllers/importacionController');
 const estadisticasService = require('./services/estadisticasService');
 const estadisticasController = require('./controllers/estadisticasController');
+const syncService = require('./sync/syncService');
+const { crearNubeSupabase } = require('./sync/nubeSupabase');
+const syncController = require('./controllers/syncController');
 const rutas = require('./routes');
 const { noEncontrada, manejarErrores } = require('./middlewares/errores');
 
 // Fábrica: recibe db y config, así las pruebas crean una app con base en memoria.
-function crearApp({ db, config, impresora, iaServicio }) {
+function crearApp({ db, config, impresora, iaServicio, nube }) {
   const busqueda = busquedaService(productoRepository(db));
   const catalogo = catalogoService(db, busqueda);
   const ventas = ventaService(db, { mayoreoPorcentaje: config.mayoreoPorcentaje });
@@ -38,6 +41,10 @@ function crearApp({ db, config, impresora, iaServicio }) {
   const cortes = corteService(db);
   const inventario = inventarioService(db);
   const estadisticas = estadisticasService(db, { zona: config.zonaHoraria || 'America/Mexico_City', corte: cortes, inventario });
+  // La nube es OPCIONAL: sin SUPABASE_URL/clave/usuario la caja funciona igual y simplemente no sube nada.
+  const s = config.sync || {};
+  const nubeReal = nube !== undefined ? nube : (s.habilitada ? crearNubeSupabase({ url: s.url, anonKey: s.anonKey, email: s.email, password: s.password }) : null);
+  const sync = syncService(db, { nube: nubeReal, estadisticas, version: require('../package.json').version, intervaloSeg: s.intervaloSeg || 60 });
   const proveedores = proveedorService(db);
   const compras = compraService(db, busqueda);
   const importaciones = importacionService(db, {
@@ -52,6 +59,7 @@ function crearApp({ db, config, impresora, iaServicio }) {
   app.use('/api', rutas({
     mw,
     cajaCtrl: cajaController(cortes, imp),
+    syncCtrl: syncController(sync),
     estadisticasCtrl: estadisticasController(estadisticas),
     compraCtrl: compraController(compras, proveedores),
     importacionCtrl: importacionController(importaciones, { costoIncluyeImpuestos: config.costoIncluyeImpuestos !== false }),
@@ -65,6 +73,7 @@ function crearApp({ db, config, impresora, iaServicio }) {
   // Código compartido con la app del celular (gráficas): son archivos estáticos sin datos ni secretos.
   app.use('/pwa', express.static(path.join(config.raiz, 'pwa')));
   app.use(manejarErrores);
+  app.locals.sync = sync; // server.js lo arranca; las pruebas no inician temporizadores
   return app;
 }
 

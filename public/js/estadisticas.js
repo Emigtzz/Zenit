@@ -110,6 +110,22 @@ function pintarStock(n) {
     nodo('a', { href: '/inventario.html', class: 'enlace', texto: 'Ver todo en Inventario' }));
 }
 
+const haceCuanto = (iso) => { const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? 'hace menos de 1 min' : m < 60 ? `hace ${m} min` : m < 1440 ? `hace ${Math.floor(m / 60)} h` : `hace ${Math.floor(m / 1440)} d`; };
+async function pintarSync() {
+  try {
+    const e = await api.syncEstado();
+    const l = (a, b, clase) => nodo('div', { class: 'linea' }, nodo('span', { texto: a }), nodo('span', { class: clase || '', texto: b }));
+    const pend = e.pendientes.ventas + e.pendientes.cortes;
+    if (!e.configurada) { $('sync').replaceChildren(nodo('div', { class: 'estado', texto: 'Sin configurar' }), nodo('div', { class: 'viz-nota', texto: 'La caja funciona igual, pero el celular del dueño no recibe datos. Guía: supabase/LEEME.md' })); $('sync-ahora').hidden = true; return; }
+    $('sync-ahora').hidden = false;
+    $('sync').replaceChildren(
+      e.situacion === 'error' ? nodo('div', { class: 'estado mal', texto: '⚠ No se pudo sincronizar' }) : e.situacion === 'pendiente' ? nodo('div', { class: 'estado', texto: `⏳ ${pend} por subir` }) : nodo('div', { class: 'estado bien', texto: '✔ Todo en la nube' }),
+      l('Última vez', e.ultimo_exito ? haceCuanto(e.ultimo_exito) : 'nunca'), l('Por subir', `${e.pendientes.ventas} ventas · ${e.pendientes.cortes} cortes`), l('Ventas subidas', String(e.ventas_subidas)),
+      ...(e.ultimo_error ? [nodo('div', { class: 'viz-nota mal', style: 'margin-top:6px', texto: e.ultimo_error })] : []));
+  } catch { /* sin tarjeta */ }
+}
+$('sync-ahora').addEventListener('click', async () => { $('sync-ahora').disabled = true; $('sync-ahora').textContent = 'Sincronizando…'; try { await api.syncAhora(); } finally { $('sync-ahora').disabled = false; $('sync-ahora').textContent = 'Sincronizar ahora'; pintarSync(); } });
+
 async function cargar(dia) {
   [cHora, cSerie, cMetodo, cTop].forEach((c) => c.cargando(true)); // se mantiene el marco: solo baja la opacidad
   try {
@@ -117,7 +133,7 @@ async function cargar(dia) {
     diaActual = datos.dia;
     $('error').hidden = true;
     $('f-dia').value = datos.dia; $('f-dia').max = datos.hoy;
-    pintarHero(datos); pintarKpis(datos.resumen); pintarHora(datos); pintarSerie(datos); pintarMetodo(datos); pintarTop(); pintarCaja(datos.negocio); pintarStock(datos.negocio);
+    pintarHero(datos); pintarKpis(datos.resumen); pintarHora(datos); pintarSerie(datos); pintarMetodo(datos); pintarTop(); pintarCaja(datos.negocio); pintarStock(datos.negocio); pintarSync();
     $('actualizado').textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })} · zona ${datos.zona_horaria}`;
   } catch (e) { $('error').hidden = false; $('error').textContent = e.message; }
   finally { [cHora, cSerie, cMetodo, cTop].forEach((c) => c.cargando(false)); }

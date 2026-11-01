@@ -649,3 +649,45 @@ test('la carpeta /pwa (gráficas compartidas) se sirve sin sesión y no expone n
     assert.equal((await fetch(`${base}/pwa/%2e%2e/.env`)).status, 404);
   } finally { s.cerrar(); }
 });
+
+// ================= Sincronización =================
+test('GET /sync/estado: sin nube configurada lo dice; el cajero ve el resumen y el dueño el detalle; ahora = solo dueño', async () => {
+  const s = await levantar();
+  try {
+    const d = (await s.pedir('GET', '/sync/estado')).json;
+    assert.equal(d.configurada, false);
+    assert.equal(d.situacion, 'no_configurada');
+    assert.match(d.instalacion_id, /^[0-9a-f-]{36}$/);
+    const caj = await s.como('Beto', 'cajero');
+    const c = (await caj('GET', '/sync/estado')).json;
+    assert.deepEqual(Object.keys(c).sort(), ['configurada', 'error_tipo', 'pendientes', 'situacion', 'ultimo_exito']);   // sin id de instalación ni mensajes técnicos
+    assert.equal((await caj('POST', '/sync/ahora')).status, 403);
+    const r = await s.pedir('POST', '/sync/ahora');
+    assert.equal(r.status, 200);
+    assert.equal(r.json.resultado.estado, 'no_configurado');
+    assert.equal((await s.crudo('GET', '/sync/estado')).status, 401);
+    assert.equal(s.db.prepare('SELECT COUNT(*) n FROM ventas').get().n, 0);
+  } finally { s.cerrar(); }
+});
+
+test('cobrar NO depende de la nube: con una nube que falla, la venta se guarda y queda pendiente', async () => {
+  const nubeCaida = { async subir() { const { ErrorNube } = require('../src/sync/errores'); throw new ErrorNube('sin_conexion'); } };
+  const db = crearBaseDePrueba();
+  const servidor = crearApp({ db, config, impresora: { imprimirVenta: async () => ({}) }, nube: nubeCaida }).listen(0, '127.0.0.1');
+  await new Promise((r) => servidor.once('listening', r));
+  try {
+    const id = Number(await crearUsuario(db, 'Ana', 'dueño', 'contraseña-larga'));
+    const base = `http://127.0.0.1:${servidor.address().port}/api`;
+    const login = await fetch(base + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ usuario_id: id, contrasena: 'contraseña-larga' }) });
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const h = { 'content-type': 'application/json', cookie };
+    const v = await fetch(base + '/ventas', { method: 'POST', headers: h, body: JSON.stringify({ items: [{ producto_id: 1, cantidad: 1 }], pagos: [{ metodo: 'efectivo', monto: 1850 }] }) });
+    assert.equal(v.status, 201);
+    const ahora = await (await fetch(base + '/sync/ahora', { method: 'POST', headers: h })).json();
+    assert.equal(ahora.resultado.estado, 'error');
+    assert.equal(ahora.resultado.tipo, 'sin_conexion');
+    assert.equal(ahora.estado.pendientes.ventas, 1);
+    assert.equal(ahora.estado.situacion, 'error');
+    assert.equal(db.prepare('SELECT COUNT(*) n FROM ventas').get().n, 1);   // la venta sigue ahí
+  } finally { servidor.close(); }
+});

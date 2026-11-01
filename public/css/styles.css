@@ -94,3 +94,6 @@ tr.flash td { animation: flash .5s; }
   .barra .atajos { display: none; }
   .barra h1 { flex-basis: 100%; }
 }
+
+.sync { font-size: 12px; color: var(--suave); white-space: nowrap; }
+.sync.ok { color: var(--ok); } .sync.pend { color: var(--aviso); } .sync.err { color: var(--error); font-weight: 650; }

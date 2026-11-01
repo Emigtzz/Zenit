@@ -221,6 +221,25 @@ async function avisarStockBajo() {
   } catch { /* sin indicador */ }
 }
 
+// Indicador de la nube (para todos): ¿las ventas ya están a salvo y visibles en el celular del dueño?
+const haceCuanto = (iso) => {
+  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  return min < 1 ? 'hace menos de 1 min' : min < 60 ? `hace ${min} min` : min < 1440 ? `hace ${Math.floor(min / 60)} h` : `hace ${Math.floor(min / 1440)} d`;
+};
+async function actualizarSync() {
+  const el = document.getElementById('sync-estado');
+  try {
+    const e = await api.syncEstado();
+    const pend = e.pendientes.ventas + e.pendientes.cortes;
+    let texto = '', clase = 'sync', tip = '';
+    if (!e.configurada) { texto = usuarioActual?.rol === 'dueño' ? '☁ Sin nube' : ''; tip = 'La sincronización con la nube no está configurada: la caja funciona igual.'; }
+    else if (e.situacion === 'error') { texto = `☁ ${e.error_tipo === 'sin_conexion' ? 'Sin conexión' : 'Error de nube'}${pend ? ` · ${pend} por subir` : ''}`; clase += ' err'; tip = e.ultimo_error || 'No se pudo sincronizar. Las ventas están guardadas y se subirán solas.'; }
+    else if (pend) { texto = `☁ ${pend} por subir`; clase += ' pend'; tip = 'Se subirán en unos segundos.'; }
+    else { texto = e.ultimo_exito ? `☁ Sincronizado ${haceCuanto(e.ultimo_exito)}` : '☁ Esperando'; clase += e.ultimo_exito ? ' ok' : ''; tip = 'Las ventas están a salvo en la nube.'; }
+    el.textContent = texto; el.className = clase; el.title = tip;
+  } catch { /* si falla, no estorba a la venta */ }
+}
+
 // ---------- Arranque ----------
 alCambiar(pintarTicket);
 async function iniciar() {
@@ -236,6 +255,7 @@ async function iniciar() {
     if (cfg.modo_impresora !== 'real') avisar(`Impresora en modo simulación (${cfg.modo_impresora})`, 'aviso', 3000);
     await cargarCatalogo();
     await revisarCaja();
+    actualizarSync();
     if (usuarioActual.rol === 'dueño') avisarStockBajo();
   } catch (e) {
     avisar(e.message, 'error', 0);
@@ -243,6 +263,8 @@ async function iniciar() {
   pintarTicket();
   enfocar(); // respeta los modales: si hay uno abierto (p. ej. "Abrir caja"), NO le quita el foco
   // Refresca el catálogo de vez en cuando (precios nuevos, productos dados de alta en otra pestaña).
-  setInterval(() => { if (!modalActivo()) { cargarCatalogo().catch(() => {}); if (usuarioActual?.rol === 'dueño') avisarStockBajo(); } }, 120000);
+  setInterval(actualizarSync, 30000);
+  setInterval(() => { if (!modalActivo()) { cargarCatalogo().catch(() => {}); if (usuarioActual?.rol === 'dueño') avisarStockBajo(); }
+    actualizarSync(); }, 120000);
 }
 iniciar();
