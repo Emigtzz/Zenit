@@ -3,6 +3,7 @@ const { ErrorApp } = require('../utils/errores');
 const { calcularTotales, calcularImporte, resolverPagos } = require('./calculos');
 const ventaRepository = require('../repositories/ventaRepository');
 const productoRepository = require('../repositories/productoRepository');
+const corteRepository = require('../repositories/corteRepository');
 
 // Entrada (ya validada por zod en la ruta):
 //   { items: [{producto_id, cantidad}], pagos: [{metodo, monto}], mayoreo: boolean }
@@ -10,10 +11,15 @@ const productoRepository = require('../repositories/productoRepository');
 module.exports = function ventaService(db, { mayoreoPorcentaje = 5 } = {}) {
   const ventas = ventaRepository(db);
   const productos = productoRepository(db);
+  const cortes = corteRepository(db);
 
   // db.transaction envuelve la función en BEGIN ... COMMIT. Si la función LANZA una excepción,
   // better-sqlite3 hace ROLLBACK automático y relanza el error: no queda nada a medias.
   const ejecutar = db.transaction((entrada, usuarioId) => {
+    // 0. Sin caja abierta no se vende: cada venta debe caer en un corte (si no, el corte no cuadraría).
+    const corte = cortes.abierto();
+    if (!corte) throw new ErrorApp('Abre la caja antes de vender', { status: 409, codigo: 'CAJA_CERRADA' });
+
     // 1. Unir líneas repetidas del mismo producto (defensa extra: el frontend ya las suma).
     const cantidades = new Map();
     for (const it of entrada.items) {
@@ -45,7 +51,7 @@ module.exports = function ventaService(db, { mayoreoPorcentaje = 5 } = {}) {
 
     // 4. Escribir todo. Cualquier fallo desde aquí deshace TODO, incluidos los descuentos de stock.
     const fecha = new Date().toISOString();
-    const ventaId = ventas.insertarVenta({ fecha, usuario_id: usuarioId, ...totales, cambio: resolucion.cambio });
+    const ventaId = ventas.insertarVenta({ fecha, usuario_id: usuarioId, corte_id: corte.id, ...totales, cambio: resolucion.cambio });
     for (const l of lineas) {
       ventas.insertarDetalle(ventaId, l);
       ventas.insertarMovimiento({

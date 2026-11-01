@@ -3,8 +3,8 @@ module.exports = function ventaRepository(db) {
   return {
     insertarVenta(v) {
       return db
-        .prepare(`INSERT INTO ventas (fecha, usuario_id, subtotal, descuento_mayoreo, total, cambio, estado, sincronizada)
-                  VALUES (@fecha, @usuario_id, @subtotal, @descuento_mayoreo, @total, @cambio, 'completada', 0)`)
+        .prepare(`INSERT INTO ventas (fecha, usuario_id, corte_id, subtotal, descuento_mayoreo, total, cambio, estado, sincronizada)
+                  VALUES (@fecha, @usuario_id, @corte_id, @subtotal, @descuento_mayoreo, @total, @cambio, 'completada', 0)`)
         .run(v).lastInsertRowid;
     },
     insertarDetalle(ventaId, l) {

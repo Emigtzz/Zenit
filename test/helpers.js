@@ -3,9 +3,10 @@ const { abrirBase } = require('../src/db/connection');
 const { migrar } = require('../src/db/migrate');
 
 // Base de datos en memoria, nueva y migrada para cada prueba: aisladas y rápidas.
-function crearBaseDePrueba() {
+function crearBaseDePrueba({ cajaAbierta = true } = {}) {
   const db = abrirBase(':memory:');
   migrar(db);
+  if (cajaAbierta) db.prepare('INSERT INTO cortes_caja (apertura, fondo_inicial) VALUES (?, 0)').run(new Date().toISOString());
   db.prepare("INSERT INTO categorias (nombre, color) VALUES ('Abarrotes', '#f59e0b')").run();
   const ins = db.prepare(`INSERT INTO productos (codigo_barras, codigo_corto, nombre, categoria_id, costo, precio, stock)
                           VALUES (?, ?, ?, 1, ?, ?, ?)`);
