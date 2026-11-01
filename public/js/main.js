@@ -4,9 +4,11 @@ import { pintarTicket, pintarBotones, avisar, pitar, iniciarReloj } from './vist
 import { modalActivo, abrirModal, cerrarModal, el } from './modal.js';
 import { abrirBusqueda } from './busqueda.js';
 import { abrirCobro } from './cobro.js';
+import { abrirApertura, abrirMovimiento, abrirCierre } from './caja.js';
 import { formatear } from './dinero.js';
 
 let usuarioActual = null;
+let cajaAbierta = false;
 
 const entrada = document.getElementById('codigo');
 let porCodigo = new Map();   // código de barras o corto -> producto (búsqueda instantánea, sin ir al servidor)
@@ -155,9 +157,34 @@ function abrirCambioContrasena() {
 }
 document.getElementById('btn-pass').addEventListener('click', abrirCambioContrasena);
 
+// ---------- Caja: apertura, movimientos y corte ----------
+const hora = (iso) => new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+async function revisarCaja() {
+  try {
+    const e = await api.estadoCaja();
+    cajaAbierta = e.abierta;
+    const el = document.getElementById('caja-estado');
+    el.textContent = e.abierta ? `🟢 Caja abierta desde ${hora(e.corte.apertura)}` : '🔴 Caja cerrada';
+    if (!e.abierta && !modalActivo()) abrirApertura({ alAbrir: () => { revisarCaja(); avisar('Caja abierta. ¡Buen turno!', 'ok', 2000); }, alSalir: salir });
+  } catch (err) { avisar(err.message, 'error', 0); }
+}
+function movimientoEfectivo() {
+  if (!cajaAbierta) { revisarCaja(); return; }
+  abrirMovimiento({ alTerminar: (mensaje) => { if (mensaje) avisar(mensaje, 'ok', 3000); enfocar(); } });
+}
+function corte() {
+  if (!cajaAbierta) { revisarCaja(); return; }
+  if (venta.lineas.length) { avisar('Termina o cancela la venta (Esc) antes de hacer el corte', 'error', 3000); return; }
+  abrirCierre({ rol: usuarioActual.rol, alTerminar: (resultado) => { if (resultado) revisarCaja(); else enfocar(); } });
+}
+
 function cobrar() {
   if (!venta.lineas.length) { avisar('Agrega productos antes de cobrar', 'aviso', 2000); return; }
-  abrirCobro({ alCobrar: mostrarExito });
+  abrirCobro({
+    alCobrar: mostrarExito,
+    // Si alguien cerró la caja desde otra pantalla mientras se cobraba: no se pierde la venta, se pide abrir caja.
+    alError: (e) => { if (e.codigo === 'CAJA_CERRADA') { cerrarModal(); revisarCaja(); } },
+  });
 }
 
 // ---------- Atajos de teclado ----------
@@ -166,6 +193,8 @@ document.addEventListener('keydown', (e) => {
   if (m) { m.onKey?.(e); return; }
   switch (e.key) {
     case 'F9': e.preventDefault(); salir(); return;
+    case 'F6': e.preventDefault(); movimientoEfectivo(); return;
+    case 'F10': e.preventDefault(); corte(); return;
     case 'F2': e.preventDefault(); abrirBusqueda({ alElegir: (p) => { agregarProducto(p); enfocar(); } }); return;
     case 'F4': e.preventDefault(); cobrar(); return;
     case 'F8': e.preventDefault(); alternarMayoreo(); avisar(venta.mayoreo ? `Mayoreo activado (${venta.pctMayoreo}%)` : 'Mayoreo desactivado', 'ok', 1500); return;
@@ -206,12 +235,13 @@ async function iniciar() {
     venta.pctMayoreo = cfg.mayoreo_porcentaje;
     if (cfg.modo_impresora !== 'real') avisar(`Impresora en modo simulación (${cfg.modo_impresora})`, 'aviso', 3000);
     await cargarCatalogo();
+    await revisarCaja();
     if (usuarioActual.rol === 'dueño') avisarStockBajo();
   } catch (e) {
     avisar(e.message, 'error', 0);
   }
   pintarTicket();
-  entrada.focus();
+  enfocar(); // respeta los modales: si hay uno abierto (p. ej. "Abrir caja"), NO le quita el foco
   // Refresca el catálogo de vez en cuando (precios nuevos, productos dados de alta en otra pestaña).
   setInterval(() => { if (!modalActivo()) { cargarCatalogo().catch(() => {}); if (usuarioActual?.rol === 'dueño') avisarStockBajo(); } }, 120000);
 }

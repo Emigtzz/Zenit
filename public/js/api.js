@@ -31,6 +31,14 @@ export async function requerirDueno() {
 }
 
 export const api = {
+  estadoCaja: () => pedir('GET', '/caja/estado'),
+  abrirCaja: (fondo_inicial) => pedir('POST', '/caja/abrir', { fondo_inicial }),
+  resumenCaja: () => pedir('GET', '/caja/resumen'),
+  movimientoCaja: (m) => pedir('POST', '/caja/movimientos', m),
+  cerrarCaja: (d) => pedir('POST', '/caja/cerrar', d),
+  cortes: (pagina = 1) => pedir('GET', `/caja/cortes?pagina=${pagina}`),
+  corte: (id) => pedir('GET', `/caja/cortes/${id}`),
+  imprimirCorte: (id) => pedir('POST', `/caja/cortes/${id}/imprimir`),
   estadoAuth: () => pedir('GET', '/auth/estado'),
   setup: (d) => pedir('POST', '/auth/setup', d),
   login: (d) => pedir('POST', '/auth/login', d),

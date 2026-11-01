@@ -58,3 +58,14 @@ Navegador (public/)  →  routes  →  controllers  →  services  →  reposito
 - **Primer arranque**: sin usuarios, `/auth/setup` crea al dueño y deja de funcionar al existir cualquiera (no hay puerta trasera). El rescate es un script local (`scripts/usuarios.js`).
 - **Trazabilidad**: `usuario_id` se llena en `ventas` y `movimientos_inventario`; es la base del corte de caja por cajero.
 - **Límite conocido**: el servidor escucha solo en `127.0.0.1`, por lo que la protección se centra en separar roles en la misma máquina, no en exponerse a una red.
+
+## Fase 2 — Corte de caja
+
+- **Modelo**: `cortes_caja` (un turno) + `movimientos_caja` (ingresos/retiros de efectivo) + `ventas.corte_id`. Migración 004 agrega, además, quién abrió/cerró, notas y una **foto de totales** al cerrar.
+- **Un solo corte abierto**: índice único parcial `ON cortes_caja ((cierre IS NULL)) WHERE cierre IS NULL`. La regla vive en la base, no solo en el código.
+- **Vender exige caja abierta**: `ventaService` lee el corte abierto dentro de la misma transacción de la venta y le guarda `corte_id`; si no hay, `CAJA_CERRADA` (409) y no se escribe nada.
+- **Fuente de verdad**: el esperado se **calcula** desde ventas, pagos y movimientos (`corteService.calcular`); al cerrar se congela una copia en el propio corte. `pagos.monto` en efectivo ya excluye el cambio, por eso la suma cuadra con lo que queda en el cajón.
+- **Corte ciego**: `resumenActual(rol)` entrega al cajero solo el número de ventas; el dueño recibe el desglose. Quien cuenta no puede ajustar su conteo al "debería".
+- **Retiros acotados**: no se puede retirar más que el efectivo esperado en ese momento (verificado dentro de la transacción).
+- **Impresión desacoplada del cierre**: el cierre responde 200 aunque la impresora lance una excepción (hay prueba).
+- **Ventas por cajero** en el corte salen de `ventas.usuario_id` (fase de usuarios).

@@ -50,6 +50,24 @@ Otras pantallas (solo dueño):
 - Catálogo (alta, edición y desactivación): <http://localhost:3000/catalogo.html>
 - Inventario (ajustes y kárdex): <http://localhost:3000/inventario.html>
 - Usuarios: <http://localhost:3000/usuarios.html>
+- Cortes de caja: <http://localhost:3000/cortes.html>
+
+## Corte de caja
+
+Cada turno de la caja es un **corte**. Al entrar, si la caja está cerrada, la pantalla pide **abrir caja** con el *fondo inicial* (el efectivo con que arranca el cajón); **sin caja abierta no se puede vender**, y cada venta queda ligada a su corte. La base de datos misma impide tener dos cortes abiertos.
+
+```
+efectivo esperado = fondo inicial + ventas en efectivo + ingresos − retiros
+```
+
+Tarjeta y transferencia **no** cuentan, porque ese dinero no está en el cajón. De las ventas en efectivo solo cuenta lo aplicado a la venta (no el cambio que se devolvió). Las ventas canceladas no cuentan.
+
+- **`F6` Entrada/salida de efectivo:** registra un retiro o ingreso con motivo obligatorio y quién lo hizo. No permite retirar más efectivo del que debe haber.
+- **`F10` Corte:** el cajero **cuenta el efectivo sin ver cuánto debería haber** (corte *ciego*, para que no se "cuadre" a ojo). Pide confirmación y muestra *faltan* / *sobran* / *caja cuadrada*. El dueño sí ve el desglose antes de cerrar. No se permite con una venta en curso.
+- Al cerrar se imprime el **ticket del corte** (con firma; nunca abre el cajón). Una falla de la impresora no deshace el cierre.
+- El **dueño** consulta el historial en `/cortes.html`: totales por método y por cajero, movimientos de efectivo, diferencia y reimpresión. Los totales de un corte cerrado quedan guardados y no cambian.
+
+> Al actualizar una instalación existente, la primera vez que alguien entre se pedirá abrir caja.
 
 ## Usuarios y roles
 
@@ -59,6 +77,8 @@ Todo el sistema pide iniciar sesión. En la pantalla de entrada se elige el nomb
 |---|:-:|:-:|
 | Vender, buscar productos, reimprimir tickets | ✅ | ✅ |
 | Ver stock bajo | ✅ | ✅ |
+| Abrir caja, mover efectivo y hacer el corte (ciego) | ✅ | ✅ |
+| Ver el historial de cortes y su desglose | ❌ | ✅ |
 | Cambiar su propia contraseña | ✅ | ✅ |
 | Ver **costos** de los productos | ❌ | ✅ |
 | Alta/edición/desactivación de catálogo y precios | ❌ | ✅ |
@@ -121,6 +141,9 @@ Todo ajuste exige un **motivo** (conteo físico, merma, caducado, dañado, robo 
 | `+` `-` | Subir/bajar cantidad de la línea seleccionada (con el campo vacío) |
 | `Supr` | Quitar la línea seleccionada |
 | `Esc` | Cancelar la venta en curso (pide confirmación con Enter) |
+| `F6` | Entrada o salida de efectivo del cajón (pago a proveedor, retiro, cambio extra) |
+| `F10` | Corte de caja (cierra el turno) |
+| `F9` | Cambiar de usuario |
 | `N*código` | Escribir `3*101` agrega 3 piezas del código 101 |
 
 ## Configuración (`.env`)
@@ -169,6 +192,8 @@ Todas las rutas excepto `/api/auth/estado`, `/api/auth/login` y `/api/auth/setup
 | `GET /api/ventas/:id`, `GET /api/ventas/:id/impresion`, `POST /api/ventas/:id/reimprimir` | Consulta y reimpresión |
 | `POST /api/inventario/ajustes` | `{producto_id, modo: entrada\|salida\|conteo, cantidad, motivo, nota}` |
 | `GET /api/inventario/kardex?producto_id=&tipo=&desde=&hasta=&pagina=` | Movimientos con saldo acumulado (fechas `AAAA-MM-DD`, hora local) |
+| `GET /api/caja/estado`, `POST /api/caja/abrir`, `GET /api/caja/resumen`, `POST /api/caja/movimientos`, `POST /api/caja/cerrar` | Turno de caja (cajero y dueño; el cajero recibe un resumen ciego) |
+| `GET /api/caja/cortes`, `GET /api/caja/cortes/:id`, `POST /api/caja/cortes/:id/imprimir` | Historial de cortes (dueño) |
 | `GET /api/inventario/stock-bajo` | `{total, por_nivel, productos[]}` con `nivel` y `faltante` |
 | `GET /api/inventario/motivos`, `GET /api/inventario/verificar` | Catálogo de motivos y chequeo de consistencia |
 
@@ -185,7 +210,7 @@ Detalle y decisiones en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
 ## Roadmap
 
 1. ✅ Venta básica (este README)
-2. Inventario y control: ✅ kárdex, ajustes, stock bajo, usuarios y permisos · ⏳ corte de caja, compras manuales
+2. Inventario y control: ✅ kárdex, ajustes, stock bajo, usuarios y permisos, corte de caja · ⏳ compras manuales
 3. Importación de facturas (XML CFDI)
 4. Estadísticas, sincronización a Supabase y PWA del dueño
 5. Puesta en marcha: catálogo real, etiquetas, respaldos y capacitación
