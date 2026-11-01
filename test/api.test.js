@@ -418,3 +418,86 @@ test('si la impresora lanza al imprimir el corte, el cierre SÍ queda guardado y
     assert.equal(db.prepare('SELECT COUNT(*) n FROM cortes_caja WHERE cierre IS NULL').get().n, 0);
   } finally { servidor.close(); }
 });
+
+// ================= Compras y proveedores =================
+
+test('compras por HTTP: proveedor → compra → stock/costo/kárdex → advertencia → anulación', async () => {
+  const s = await levantar();
+  try {
+    const prov = await s.pedir('POST', '/proveedores', { nombre: 'Distribuidora Sol', rfc: ' abc010101ab1 ' });
+    assert.equal(prov.status, 201);
+    assert.equal(prov.json.rfc, 'ABC010101AB1'); // se normaliza a mayúsculas
+    assert.equal((await s.pedir('POST', '/proveedores', { nombre: 'distribuidora sol' })).status, 409);
+    assert.equal((await s.pedir('POST', '/proveedores', { nombre: 'Malo', rfc: '123' })).status, 400);
+
+    const cuerpo = { proveedor_id: prov.json.id, folio_factura: 'A-100', items: [{ producto_id: 1, cantidad: 12, costo_unitario: 2000 }] }; // precio 1850 < costo
+    const r = await s.pedir('POST', '/compras', cuerpo);
+    assert.equal(r.status, 201);
+    assert.equal(r.json.compra.total, 24000);
+    assert.equal(r.json.compra.usuario_nombre, 'Ana');
+    assert.equal(r.json.advertencias[0].nombre, 'Refresco 600ml');
+    assert.deepEqual(r.json.cambios_costo.map((c) => [c.costo_anterior, c.costo_nuevo]), [[1000, 2000]]);
+    assert.equal(stockDe(s.db, 1), 22);
+    // el costo nuevo se ve de inmediato también en la búsqueda (el índice se invalida)
+    assert.equal((await s.pedir('GET', '/productos/buscar?q=refresco')).json[0].costo, 2000);
+
+    assert.equal((await s.pedir('POST', '/compras', cuerpo)).json.error.codigo, 'FOLIO_DUPLICADO');
+    const k = (await s.pedir('GET', '/inventario/kardex?producto_id=1&tipo=compra')).json.filas;
+    assert.equal(k[0].cantidad, 12);
+    assert.equal(k[0].referencia, `compra:${r.json.compra.id}`);
+
+    assert.equal((await s.pedir('GET', `/compras/${r.json.compra.id}`)).json.detalle[0].importe, 24000);
+    assert.equal((await s.pedir('GET', '/compras?estado=registrada')).json.total, 1);
+    assert.equal((await s.pedir('GET', '/compras/producto/1')).json[0].costo_unitario, 2000);
+
+    const an = await s.pedir('POST', `/compras/${r.json.compra.id}/anular`, { motivo: 'Capturé el costo mal' });
+    assert.equal(an.status, 200);
+    assert.equal(an.json.compra.estado, 'anulada');
+    assert.equal(stockDe(s.db, 1), 10);
+    assert.equal((await s.pedir('POST', `/compras/${r.json.compra.id}/anular`, { motivo: 'otra vez' })).status, 409);
+    assert.equal((await s.pedir('POST', `/compras/${r.json.compra.id}/anular`, { motivo: 'x' })).status, 400);
+  } finally { s.cerrar(); }
+});
+
+test('compras: validaciones de entrada (costo 0, cantidad decimal, sin items, fecha mal escrita)', async () => {
+  const s = await levantar();
+  try {
+    const prov = (await s.pedir('POST', '/proveedores', { nombre: 'P' + 'rov' })).json.id;
+    const base = { proveedor_id: prov, items: [{ producto_id: 1, cantidad: 1, costo_unitario: 100 }] };
+    assert.equal((await s.pedir('POST', '/compras', { ...base, items: [{ producto_id: 1, cantidad: 1, costo_unitario: 0 }] })).status, 400);
+    assert.equal((await s.pedir('POST', '/compras', { ...base, items: [{ producto_id: 1, cantidad: 1.5, costo_unitario: 100 }] })).status, 400);
+    assert.equal((await s.pedir('POST', '/compras', { ...base, items: [] })).status, 400);
+    assert.equal((await s.pedir('POST', '/compras', { ...base, fecha: 'ayer' })).status, 400);
+    assert.equal((await s.pedir('POST', '/compras', { ...base, fecha: '2999-01-01' })).json.error.codigo, 'FECHA_FUTURA');
+    assert.equal(stockDe(s.db, 1), 10);
+  } finally { s.cerrar(); }
+});
+
+test('compras y proveedores son solo del dueño (cajero = 403, sin sesión = 401)', async () => {
+  const s = await levantar();
+  try {
+    const caj = await s.como('Beto', 'cajero');
+    for (const [m, r, c] of [['GET', '/proveedores'], ['POST', '/proveedores', { nombre: 'X' }], ['PUT', '/proveedores/1', { nombre: 'X' }],
+      ['GET', '/compras'], ['GET', '/compras/1'], ['GET', '/compras/producto/1'],
+      ['POST', '/compras', { proveedor_id: 1, items: [{ producto_id: 1, cantidad: 1, costo_unitario: 1 }] }], ['POST', '/compras/1/anular', { motivo: 'abc' }]]) {
+      assert.equal((await caj(m, r, c)).status, 403, `${m} ${r}`);
+    }
+    assert.equal((await s.crudo('GET', '/compras')).status, 401);
+    assert.equal(stockDe(s.db, 1), 10);
+  } finally { s.cerrar(); }
+});
+
+test('compra pagada de la caja por HTTP: aparece como retiro en el corte; sin efectivo suficiente se rechaza', async () => {
+  const s = await levantar();
+  try {
+    const prov = (await s.pedir('POST', '/proveedores', { nombre: 'Bodega' })).json.id;
+    const items = [{ producto_id: 1, cantidad: 2, costo_unitario: 1000 }];
+    const sin = await s.pedir('POST', '/compras', { proveedor_id: prov, items, pagar_de_caja: true }); // la caja del helper abre con fondo 0
+    assert.equal(sin.status, 422);
+    assert.equal(sin.json.error.codigo, 'RETIRO_EXCEDE_EFECTIVO');
+    assert.equal(stockDe(s.db, 1), 10);
+    await s.pedir('POST', '/caja/movimientos', { tipo: 'ingreso', monto: 5000, motivo: 'Fondo extra' });
+    assert.equal((await s.pedir('POST', '/compras', { proveedor_id: prov, items, pagar_de_caja: true })).status, 201);
+    assert.equal((await s.pedir('GET', '/caja/resumen')).json.efectivo_esperado, 3000);
+  } finally { s.cerrar(); }
+});

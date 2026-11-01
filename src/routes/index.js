@@ -7,7 +7,7 @@ const v = require('../middlewares/validar');
 //   público     : /auth/estado, /auth/login, /auth/setup
 //   cajero+dueño: vender, consultar catálogo (sin costos), stock bajo, su propia contraseña
 //   solo dueño  : escribir catálogo, ajustes y kárdex, usuarios
-module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl: ic, authCtrl: ac, cajaCtrl: cc, mw }) {
+module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl: ic, authCtrl: ac, cajaCtrl: cc, compraCtrl: kc, mw }) {
   const r = Router();
   const dueno = mw.requerirRol('dueño');
 
@@ -49,6 +49,16 @@ module.exports = function rutas({ catalogoCtrl: c, ventaCtrl: vc, inventarioCtrl
   r.get('/ventas/:id', vc.obtener);
   r.get('/ventas/:id/impresion', vc.estadoImpresion);
   r.post('/ventas/:id/reimprimir', vc.reimprimir);
+
+  // Compras y proveedores: solo el dueño (manejan costos).
+  r.get('/proveedores', dueno, v.validar(v.listaProveedoresSchema, 'query'), kc.listarProveedores);
+  r.post('/proveedores', dueno, v.validar(v.proveedorSchema), kc.crearProveedor);
+  r.put('/proveedores/:id', dueno, v.validar(v.proveedorSchema), kc.actualizarProveedor);
+  r.get('/compras', dueno, v.validar(v.listaComprasSchema, 'query'), kc.listar);
+  r.post('/compras', dueno, v.validar(v.compraSchema), kc.registrar);
+  r.get('/compras/producto/:id', dueno, kc.historialProducto);
+  r.get('/compras/:id', dueno, kc.obtener);
+  r.post('/compras/:id/anular', dueno, v.validar(v.anularCompraSchema), kc.anular);
 
   // Caja: cualquier usuario puede abrir, mover efectivo y cerrar (el cajero hace su corte a ciegas).
   // El historial y el detalle completo son del dueño.

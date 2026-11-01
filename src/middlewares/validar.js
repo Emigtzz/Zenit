@@ -93,6 +93,36 @@ const cerrarCajaSchema = z.object({
 });
 const listaCortesSchema = z.object({ pagina: z.coerce.number().int().min(1).default(1), por_pagina: z.coerce.number().int().min(1).max(100).default(30) });
 
+const RFC = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/;
+const proveedorSchema = z.object({
+  nombre: z.string().trim().min(2, 'Mínimo 2 letras').max(80),
+  rfc: z.preprocess((v) => (typeof v === 'string' ? v.trim().toUpperCase() || null : v),
+    z.string().regex(RFC, 'RFC no válido (12 o 13 caracteres, ej. ABC010101AB1)').nullable().optional().default(null)),
+  activo: z.boolean().default(true),
+});
+const textoNullable = (max) => z.preprocess((v) => (typeof v === 'string' ? v.trim() || null : v), z.string().max(max).nullable().optional().default(null));
+const compraSchema = z.object({
+  proveedor_id: z.number().int().positive(),
+  folio_factura: textoNullable(40),
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato AAAA-MM-DD').optional(),
+  notas: textoNullable(300),
+  pagar_de_caja: z.boolean().default(false),
+  items: z.array(z.object({
+    producto_id: z.number().int().positive(),
+    cantidad: z.number({ error: 'Debe ser un número' }).int('Solo piezas enteras').positive('Debe ser mayor a 0').max(100000),
+    costo_unitario: z.number({ error: 'Debe ser un número' }).int('Debe ser entero en centavos').positive('El costo debe ser mayor a 0').max(100_000_000),
+  })).min(1, 'La compra no tiene productos').max(300),
+});
+const anularCompraSchema = z.object({ motivo: z.string().trim().min(3, 'Explica el motivo').max(200) });
+const listaComprasSchema = z.object({
+  proveedor_id: z.coerce.number().int().positive().optional(),
+  estado: z.enum(['registrada', 'anulada']).optional(),
+  desde: fechaDia.optional(), hasta: fechaDia.optional(),
+  pagina: z.coerce.number().int().min(1).default(1),
+  por_pagina: z.coerce.number().int().min(1).max(100).default(30),
+});
+const listaProveedoresSchema = z.object({ incluir_inactivos: z.enum(['0', '1']).default('0') });
+
 const buscarSchema = z.object({ q: z.string().max(100).default('') });
 const listaProductosSchema = z.object({
   incluir_inactivos: z.enum(['0', '1']).default('0'),
@@ -100,5 +130,6 @@ const listaProductosSchema = z.object({
 });
 
 module.exports = { validar, categoriaSchema, productoSchema, ventaSchema, buscarSchema, listaProductosSchema, ajusteSchema, kardexSchema,
+  proveedorSchema, compraSchema, anularCompraSchema, listaComprasSchema, listaProveedoresSchema,
   abrirCajaSchema, movimientoCajaSchema, cerrarCajaSchema, listaCortesSchema,
   loginSchema, setupSchema, usuarioNuevoSchema, usuarioEditarSchema, restablecerSchema, cambioContrasenaSchema };
