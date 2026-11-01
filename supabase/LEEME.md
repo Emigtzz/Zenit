@@ -101,6 +101,24 @@ Qué verá el dueño: ventas de hoy (con comparación contra ayer y la semana pa
 
 ---
 
+## Antes de empezar de verdad: borrar las ventas de prueba
+
+Las ventas de prueba que hagas **se suben a la nube y ahí se quedan** (la caja no tiene permiso de borrar, a propósito). Cuando termines de probar y vayas a usar la caja de verdad, limpia **las dos partes**:
+
+**1. En Supabase** → *SQL Editor* → *New query*, pega esto y presiona *Run*. Borra solo ventas, pagos, cortes y estado; **no toca** tu negocio ni los usuarios:
+
+```sql
+truncate public.pagos, public.venta_detalle, public.ventas, public.cortes, public.estado_negocio;
+```
+
+**2. En la caja** (con el programa detenido), borra la base local de prueba y vuelve a arrancar:
+
+```bash
+npm run db:reset
+```
+
+Esto borra TODO lo local (ventas de prueba, productos de ejemplo, usuarios). Después, al abrir la caja, vuelves a crear tu cuenta de dueño y cargas tu catálogo real. Hazlo **solo una vez, antes de empezar a vender de verdad**: después de eso, no.
+
 ## Problemas frecuentes
 
 | Mensaje | Qué pasa y qué hacer |
