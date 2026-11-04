@@ -4,10 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Luna de precios · Dueño</title>
-  <meta name="theme-color" content="#4f46e5">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="light">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="lib/tema.css">
+  <link rel="stylesheet" href="lib/componentes.css">
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="lib/graficas.css">
   <link rel="stylesheet" href="lib/tablero.css">
@@ -22,8 +25,8 @@
     <!-- Inicio de sesión -->
     <section id="v-login" class="login" hidden>
       <form class="tarjeta-login" id="f-login" autocomplete="on">
-        <h1 id="login-titulo">Luna de precios</h1>
-        <p>Entra con tu cuenta de dueño para ver tus ventas.</p>
+        <div class="marca"><img src="icons/icon-192.png" alt=""><h1 id="login-titulo">Luna de precios</h1></div>
+        <p style="margin-top:10px">Entra con tu cuenta de dueño para ver tus ventas.</p>
         <label for="email">Correo</label><input id="email" type="email" autocomplete="username" inputmode="email" required>
         <label for="pass">Contraseña</label><input id="pass" type="password" autocomplete="current-password" required>
         <p class="err" id="err-login" role="alert"></p>

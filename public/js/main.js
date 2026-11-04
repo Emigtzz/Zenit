@@ -156,6 +156,8 @@ function abrirCambioContrasena() {
   actual.focus();
 }
 document.getElementById('btn-pass').addEventListener('click', abrirCambioContrasena);
+document.getElementById('btn-cobrar').addEventListener('click', () => { if (!modalActivo()) cobrar(); });
+document.getElementById('btn-cancelar').addEventListener('click', () => { if (!modalActivo()) abrirConfirmacionCancelar(); });
 
 // ---------- Caja: apertura, movimientos y corte ----------
 const hora = (iso) => new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
@@ -215,9 +217,9 @@ async function avisarStockBajo() {
   try {
     const r = await api.stockBajo();
     const a = document.getElementById('enlace-inv');
-    a.textContent = r.total ? `Inventario ⚠ ${r.total} por reponer` : 'Inventario';
-    a.style.color = r.total ? 'var(--aviso)' : '';
+    a.textContent = r.total ? `Inventario · ${r.total} por reponer` : 'Inventario';
     a.style.fontWeight = r.total ? '700' : '';
+    document.querySelector('#menu-admin summary').dataset.alerta = String(r.total); // globito con el número en el botón "Administrar"
   } catch { /* sin indicador */ }
 }
 

@@ -4,32 +4,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Caja · Zenit POS</title>
+  <meta name="color-scheme" content="light">
+  <link rel="stylesheet" href="/pwa/lib/tema.css">
+  <link rel="stylesheet" href="/pwa/lib/componentes.css">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
   <header class="barra">
     <h1 id="negocio">Zenit POS</h1>
-    <nav class="atajos" aria-label="Atajos de teclado">
-      <span><kbd>F2</kbd> Buscar</span>
-      <span><kbd>F4</kbd> Cobrar</span>
-      <span><kbd>F8</kbd> Mayoreo</span>
-      <span><kbd>↑↓</kbd> Seleccionar</span>
-      <span><kbd>+</kbd><kbd>−</kbd> Cantidad</span>
-      <span><kbd>Supr</kbd> Quitar</span>
-      <span><kbd>Esc</kbd> Cancelar venta</span>
-      <span><kbd>F6</kbd> Entrada/salida efectivo</span>
-      <span><kbd>F10</kbd> Corte</span>
-      <span><kbd>F9</kbd> Cambiar usuario</span>
-    </nav>
-    <a class="enlace solo-dueno" href="/estadisticas.html" tabindex="-1" hidden>Estadísticas</a>
-    <a class="enlace solo-dueno" href="/importar.html" tabindex="-1" hidden>Importar facturas</a>
-    <a class="enlace solo-dueno" href="/compras.html" tabindex="-1" hidden>Compras</a>
-    <a class="enlace solo-dueno" href="/cortes.html" tabindex="-1" hidden>Cortes</a>
-    <a class="enlace solo-dueno" href="/usuarios.html" tabindex="-1" hidden>Usuarios</a>
-    <a class="enlace solo-dueno" id="enlace-inv" href="/inventario.html" tabindex="-1" hidden>Inventario</a>
-    <a class="enlace solo-dueno" href="/catalogo.html" tabindex="-1" hidden>Catálogo</a>
+    <div class="espacio"></div>
     <span id="sync-estado" class="sync" title=""></span>
     <span id="caja-estado" class="quien"></span>
+    <details class="menu solo-dueno" id="menu-admin" hidden>
+      <summary>Administrar</summary>
+      <nav class="menu-lista" aria-label="Administrar">
+        <a href="/estadisticas.html" tabindex="-1">Estadísticas</a>
+        <a href="/cortes.html" tabindex="-1">Cortes de caja</a>
+        <a href="/inventario.html" id="enlace-inv" tabindex="-1">Inventario</a>
+        <a href="/compras.html" tabindex="-1">Compras</a>
+        <a href="/importar.html" tabindex="-1">Importar facturas</a>
+        <a href="/catalogo.html" tabindex="-1">Catálogo</a>
+        <a href="/usuarios.html" tabindex="-1">Usuarios</a>
+      </nav>
+    </details>
     <span id="quien" class="quien"></span>
     <button type="button" class="enlace-btn" id="btn-pass" tabindex="-1">Contraseña</button>
     <button type="button" class="enlace-btn" id="btn-salir" tabindex="-1">Salir</button>
@@ -56,6 +53,10 @@
         <div id="fila-desc" hidden><span>Mayoreo <b id="t-pct"></b></span><strong id="t-desc">-$0.00</strong></div>
         <div class="gran"><span>TOTAL</span><strong id="t-total">$0.00</strong></div>
       </div>
+      <div class="acciones-venta">
+        <button type="button" class="btn grande" id="btn-cobrar" tabindex="-1" disabled>Cobrar <span id="cobrar-monto"></span> <kbd>F4</kbd></button>
+        <button type="button" class="btn sec grande peligro" id="btn-cancelar" tabindex="-1" title="Cancelar la venta en curso">Cancelar <kbd>Esc</kbd></button>
+      </div>
     </section>
 
     <aside class="rapidos" aria-label="Botones rápidos">
@@ -64,6 +65,12 @@
       <div id="botones" class="botones"></div>
     </aside>
   </main>
+
+  <footer class="atajos-pie" aria-label="Atajos de teclado">
+    <span><kbd>F2</kbd> Buscar</span><span><kbd>F4</kbd> Cobrar</span><span><kbd>F8</kbd> Mayoreo</span><span><kbd>↑</kbd><kbd>↓</kbd> Seleccionar</span>
+    <span><kbd>+</kbd><kbd>−</kbd> Cantidad</span><span><kbd>Supr</kbd> Quitar</span><span><kbd>Esc</kbd> Cancelar venta</span>
+    <span><kbd>F6</kbd> Efectivo</span><span><kbd>F10</kbd> Corte</span><span><kbd>F9</kbd> Cambiar usuario</span>
+  </footer>
 
   <div id="modal-raiz"></div>
   <script type="module" src="/js/main.js"></script>

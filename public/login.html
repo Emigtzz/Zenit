@@ -4,25 +4,32 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Entrar · Zenit POS</title>
+  <meta name="color-scheme" content="light">
+  <link rel="stylesheet" href="/pwa/lib/tema.css">
+  <link rel="stylesheet" href="/pwa/lib/componentes.css">
   <link rel="stylesheet" href="/css/styles.css">
   <style>
-    body { display: grid; place-items: center; overflow: auto; }
-    .tarjeta-login { background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 28px; width: min(480px, 94vw); box-shadow: 0 20px 60px rgba(0,0,0,.15); }
-    .tarjeta-login h1 { margin: 0 0 4px; font-size: 24px; } .sub { color: var(--suave); margin: 0 0 18px; }
+    body { display: grid; place-items: center; overflow: auto; padding: 20px; background: radial-gradient(1200px 500px at 50% -10%, #e9f0fa 0%, transparent 70%), var(--fondo); }
+    .tarjeta-login { background: var(--panel); border: 1px solid var(--borde); border-radius: 20px; padding: 32px; width: min(460px, 94vw); box-shadow: var(--sombra-2); }
+    .marca { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+    .marca img { width: 52px; height: 52px; border-radius: 14px; box-shadow: var(--sombra-1); }
+    .tarjeta-login h1 { margin: 0; font-size: 24px; letter-spacing: -.01em; }
+    .sub { color: var(--suave); margin: 0 0 20px; font-size: 15px; }
     .usuarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
-    .usuarios button { border: 2px solid var(--borde); background: var(--fondo); color: var(--texto); border-radius: 12px; padding: 16px 8px; font: inherit; font-weight: 700; font-size: 17px; cursor: pointer; }
-    .usuarios button:focus, .usuarios button:hover { border-color: var(--acento); outline: none; }
-    label { display: block; font-size: 13px; color: var(--suave); margin: 12px 0 4px; }
-    input[type=password], input[type=text] { width: 100%; font-size: 22px; padding: 10px 12px; border: 2px solid var(--borde); border-radius: 10px; background: var(--fondo); color: var(--texto); }
-    input:focus { border-color: var(--acento); outline: none; }
-    .quien { font-size: 20px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
-    .err { color: var(--error); font-weight: 600; min-height: 1.5em; margin: 8px 0 0; }
+    .usuarios button { border: 1.5px solid var(--borde-fuerte); background: var(--panel); color: var(--texto); border-radius: 14px; padding: 18px 8px; font: inherit; font-weight: 650; font-size: 17px; cursor: pointer; transition: background-color .12s, border-color .12s; }
+    .usuarios button:hover { background: var(--acento-suave); border-color: var(--acento); }
+    .usuarios button:focus-visible { border-color: var(--acento); }
+    label { display: block; font-size: 13px; font-weight: 600; color: var(--suave); margin: 14px 0 5px; }
+    input[type=password], input[type=text] { width: 100%; font-size: 22px; min-height: 52px; padding: 8px 14px; }
+    .quien { font-size: 20px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; background: none; padding: 0; }
+    .err { margin: 10px 0 0; min-height: 1.5em; }
     .ayuda a { color: var(--suave); }
+    .tarjeta-login .btn { min-width: 140px; }
   </style>
 </head>
 <body>
   <main class="tarjeta-login">
-    <h1 id="negocio">Zenit POS</h1>
+    <div class="marca"><img src="/pwa/icons/icon-192.png" alt=""><h1 id="negocio">Zenit POS</h1></div>
     <p class="sub" id="sub">Cargando…</p>
 
     <section id="v-usuarios" hidden>

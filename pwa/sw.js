@@ -1,7 +1,7 @@
 // Service worker: guarda la "cáscara" de la app para que abra SIN internet (los datos los guarda app.js).
 // NUNCA intercepta ni guarda las peticiones a Supabase: las cifras del negocio no se cachean aquí.
-const VERSION = 'zenit-pwa-v1';
-const CASCARA = ['./', './index.html', './app.js', './app.css', './config.js', './manifest.webmanifest', './lib/graficas.js', './lib/graficas.css', './lib/tablero.js', './lib/tablero.css',
+const VERSION = 'zenit-pwa-v2';
+const CASCARA = ['./', './index.html', './app.js', './app.css', './config.js', './manifest.webmanifest', './lib/graficas.js', './lib/graficas.css', './lib/tema.css', './lib/componentes.css', './lib/tablero.js', './lib/tablero.css',
   './vendor/supabase.js', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSION).then((c) => c.addAll(CASCARA)).then(() => self.skipWaiting())); });

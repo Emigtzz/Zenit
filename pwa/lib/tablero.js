@@ -22,10 +22,10 @@ export function crearTablero(raiz) {
   const hero = nodo('section', { class: 'viz-tarjeta c8' }, heroEtq, heroValor, d1, d2);
   const kpis = nodo('div', { class: 'tab-kpis c4' });
   const caja = nodo('div'); const stock = nodo('div');
-  const lateral = nodo('div', { class: 'tab-lateral c4' },
+  const lateral = nodo('div', { class: 'tab-lateral c4 f2' },
     nodo('section', { class: 'viz-tarjeta' }, nodo('h3', { texto: 'Caja' }), caja), nodo('section', { class: 'viz-tarjeta' }, nodo('h3', { texto: 'Stock bajo' }), stock));
   const wrap = (c, clase) => { c.el.classList.add(clase); return c.el; };
-  raiz.replaceChildren(nodo('div', { class: 'tab' }, hero, kpis, wrap(cHora, 'c8'), lateral, wrap(cSerie, 'c8'), wrap(cMetodo, 'c4'), wrap(cTop, 'c12')));
+  raiz.replaceChildren(nodo('div', { class: 'tab' }, hero, kpis, wrap(cHora, 'c8'), lateral, wrap(cSerie, 'c8'), wrap(cMetodo, 'c4'), wrap(cTop, 'c8')));
 
   let datos = null; let ordenTop = 'piezas';
   const redibujar = { hora: null, serie: null };

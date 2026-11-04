@@ -1,28 +1,24 @@
-:root { color-scheme: light dark; --pagina: #f1f5f9; --tinta: #0f172a; --suave: #64748b; --borde: #e2e8f0; --acento: #4f46e5; --error: #dc2626; --ok: #16a34a; --aviso: #d97706; }
-@media (prefers-color-scheme: dark) { :root { --pagina: #0b1220; --tinta: #e5e7eb; --suave: #94a3b8; --borde: #243049; } }
-* { box-sizing: border-box; }
+/* App del dueño. Colores y botones: lib/tema.css y lib/componentes.css (los mismos de la caja). Solo modo claro. */
 html, body { margin: 0; }
-body { font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--pagina); color: var(--tinta); min-height: 100vh; }
-main { max-width: 760px; margin: 0 auto; padding: 12px 16px calc(24px + env(safe-area-inset-bottom)); }
+body { font: 16px/1.45 var(--fuente); background: var(--fondo); color: var(--texto); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+main { max-width: 760px; margin: 0 auto; padding: 12px 16px calc(28px + env(safe-area-inset-bottom)); }
 [hidden] { display: none !important; }
-.btn { border: 0; border-radius: 10px; padding: 10px 16px; font: inherit; font-weight: 650; background: var(--acento); color: #fff; cursor: pointer; }
-.btn.sec { background: var(--borde); color: var(--tinta); } .btn.peq { padding: 6px 12px; font-size: 14px; }
-.btn:disabled { opacity: .55; }
+.sub { color: var(--suave); }
 
-.login { max-width: 380px; margin: 12vh auto 0; background: color-mix(in srgb, var(--pagina) 40%, #fff 0%); }
-.tarjeta-login { background: var(--pagina); border: 1px solid var(--borde); border-radius: 16px; padding: 24px; }
-.login h1 { margin: 0 0 4px; font-size: 24px; } .login p { color: var(--suave); margin: 0 0 16px; }
-.login label { display: block; font-size: 13px; color: var(--suave); margin: 12px 0 4px; }
-.login input { width: 100%; font-size: 17px; padding: 11px 12px; border: 2px solid var(--borde); border-radius: 10px; background: transparent; color: var(--tinta); }
-.login input:focus { border-color: var(--acento); outline: none; }
-.login .btn { width: 100%; margin-top: 16px; padding: 12px; }
-.err { color: var(--error); font-weight: 600; min-height: 1.4em; margin: 10px 0 0; font-size: 14px; }
+.login { max-width: 400px; margin: 9vh auto 0; }
+.tarjeta-login { background: var(--panel); border: 1px solid var(--borde); border-radius: 20px; padding: 28px; box-shadow: var(--sombra-2); }
+.marca { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+.marca img { width: 52px; height: 52px; border-radius: 14px; box-shadow: var(--sombra-1); }
+.login h1 { margin: 0; font-size: 23px; letter-spacing: -.01em; } .login p { color: var(--suave); margin: 0 0 18px; font-size: 15px; }
+.login label { display: block; font-size: 13px; font-weight: 600; color: var(--suave); margin: 14px 0 5px; }
+.login input { width: 100%; font-size: 17px; min-height: 48px; }
+.login .btn { width: 100%; margin-top: 18px; min-height: 50px; font-size: 17px; }
 
-.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0 10px; }
-.top h1 { margin: 0; font-size: 19px; } .top .acciones { display: flex; gap: 8px; }
-.banner { border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; font-size: 14px; background: color-mix(in srgb, var(--ok) 14%, transparent); border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent); }
-.banner.aviso { background: color-mix(in srgb, var(--aviso) 18%, transparent); border-color: color-mix(in srgb, var(--aviso) 55%, transparent); }
-.banner.error { background: color-mix(in srgb, var(--error) 14%, transparent); border-color: color-mix(in srgb, var(--error) 50%, transparent); }
-.filtros { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-.filtros input[type=date] { font-size: 15px; padding: 7px 9px; border: 2px solid var(--borde); border-radius: 8px; background: transparent; color: var(--tinta); }
-.pie { text-align: center; color: var(--suave); font-size: 12px; margin-top: 16px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0 12px; }
+.top h1 { margin: 0; font-size: 20px; letter-spacing: -.01em; } .top .acciones { display: flex; gap: 8px; }
+.banner { border-radius: var(--r-ctl); padding: 9px 13px; margin-bottom: 12px; font-size: 14px; background: var(--ok-suave); color: var(--ok); border: 1px solid var(--ok-borde); font-weight: 550; }
+.banner.aviso { background: var(--aviso-suave); color: var(--aviso); border-color: var(--aviso-borde); }
+.banner.error { background: var(--error-suave); color: var(--error); border-color: var(--error-borde); }
+.filtros { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.filtros input[type=date] { min-height: 32px; padding: 3px 10px; font-size: 15px; }
+.pie { text-align: center; color: var(--suave); font-size: 12px; margin-top: 18px; }

@@ -4,31 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Compras · Zenit POS</title>
+  <meta name="color-scheme" content="light">
+  <link rel="stylesheet" href="/pwa/lib/tema.css">
+  <link rel="stylesheet" href="/pwa/lib/componentes.css">
   <link rel="stylesheet" href="/css/styles.css">
   <style>
     body { overflow: auto; }
-    .pagina { max-width: 1150px; margin: 0 auto; padding: 16px; width: 100%; }
-    .tabs { display: flex; gap: 8px; margin: 12px 0; }
-    .tarjeta { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
-    .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 14px; align-items: end; }
-    .rejilla label, .campo-l { font-size: 13px; color: var(--suave); display: block; margin-bottom: 3px; }
-    .rejilla input[type=text], .rejilla input[type=date], .rejilla select, .rejilla textarea, td input[type=text] { width: 100%; font-size: 16px; padding: 8px 10px; border: 2px solid var(--borde); border-radius: 8px; background: var(--fondo); color: var(--texto); font-family: inherit; }
-    .rejilla .ancho { grid-column: 1 / -1; }
-    .check { display: flex; gap: 8px; align-items: center; font-size: 15px; color: var(--texto) !important; }
-    table.cat { background: var(--panel); border-radius: 10px; overflow: hidden; width: 100%; } table.cat td, table.cat th { font-size: 14px; vertical-align: middle; }
-    td input[type=text] { width: 100px; text-align: right; padding: 5px 8px; }
+    table.cat td { vertical-align: middle; }
+    td input[type=text] { width: 104px; text-align: right; padding: 4px 8px; min-height: 34px; font-size: 15px; }
     .aviso-linea { color: var(--aviso); font-size: 12px; font-weight: 600; }
-    .total-compra { font-size: 28px; font-weight: 800; text-align: right; margin: 10px 0; }
-    .err { color: var(--error); font-weight: 600; min-height: 1.4em; }
-    .ok-caja { background: var(--ok); color: #fff; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-weight: 600; }
-    .adv { background: var(--aviso); color: #fff; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
+    .total-compra { font-size: 30px; font-weight: 800; text-align: right; margin: 12px 0; letter-spacing: -.01em; }
     .nota-baja { color: var(--suave); font-size: 12px; }
-    .pie { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; color: var(--suave); }
-    .btn.peq { padding: 4px 10px; font-size: 13px; }
-    .anulada td { opacity: .5; text-decoration: line-through; }
-    dialog { border: 0; border-radius: 14px; padding: 20px; width: min(600px, 94vw); background: var(--panel); color: var(--texto); }
-    dialog::backdrop { background: rgba(2,6,23,.6); }
-    .lin { display: flex; justify-content: space-between; padding: 3px 0; } .lin.fuerte { font-weight: 800; font-size: 17px; }
   </style>
 </head>
 <body>

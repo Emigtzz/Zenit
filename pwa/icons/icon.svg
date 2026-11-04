@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs><mask id="hueco"><rect width="512" height="512" fill="#fff"/><circle cx="300" cy="226" r="132" fill="#000"/></mask></defs>
-  <rect width="512" height="512" rx="112" fill="#4f46e5"/>
+  <rect width="512" height="512" rx="112" fill="#256abf"/>
   <circle cx="232" cy="262" r="150" fill="#fff" mask="url(#hueco)"/>
   <text x="300" y="268" font-family="system-ui, 'Segoe UI', Arial, sans-serif" font-size="130" font-weight="800" fill="#fff" text-anchor="middle">$</text>
 </svg>

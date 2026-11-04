@@ -4,36 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Inventario · Zenit POS</title>
+  <meta name="color-scheme" content="light">
+  <link rel="stylesheet" href="/pwa/lib/tema.css">
+  <link rel="stylesheet" href="/pwa/lib/componentes.css">
   <link rel="stylesheet" href="/css/styles.css">
   <style>
     body { overflow: auto; }
-    .pagina { max-width: 1100px; margin: 0 auto; padding: 16px; width: 100%; }
-    .tabs { display: flex; gap: 8px; margin: 12px 0; }
-    .tarjeta { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
-    .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px 14px; align-items: end; }
-    .rejilla label, .campo-l { font-size: 13px; color: var(--suave); display: block; margin-bottom: 3px; }
-    .rejilla input, .rejilla select, .rejilla textarea, .pick input { width: 100%; font-size: 16px; padding: 8px 10px; border: 2px solid var(--borde); border-radius: 8px; background: var(--fondo); color: var(--texto); font-family: inherit; }
-    .ancho { grid-column: 1 / -1; }
-    .pick { position: relative; }
-    .pick ul { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin: 2px 0 0; padding: 4px; list-style: none; background: var(--panel); border: 1px solid var(--borde); border-radius: 8px; max-height: 260px; overflow: auto; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
-    .pick li { padding: 8px 10px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; }
-    .pick li.sel { background: var(--sel); }
-    .pick .quitar { position: absolute; right: 8px; top: 8px; border: 0; background: transparent; color: var(--suave); cursor: pointer; font-size: 18px; }
-    table.cat { background: var(--panel); border-radius: 10px; overflow: hidden; }
-    table.cat td, table.cat th { font-size: 14px; }
-    .mas { color: var(--ok); font-weight: 700; } .menos { color: var(--error); font-weight: 700; }
-    .etq { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--borde); }
     .modos { display: flex; gap: 8px; flex-wrap: wrap; }
-    .modos label { display: flex; gap: 6px; align-items: center; border: 2px solid var(--borde); border-radius: 10px; padding: 8px 12px; cursor: pointer; font-size: 15px; color: var(--texto); margin: 0; }
-    .modos label.on { border-color: var(--acento); background: var(--sel); }
-    .vista { font-size: 22px; font-weight: 800; margin: 10px 0; }
-    .err { color: var(--error); font-weight: 600; min-height: 1.4em; }
-    .alerta { background: var(--aviso); color: #fff; border-radius: 10px; padding: 10px 14px; margin: 12px 0; font-weight: 600; }
+    .modos label { display: flex; gap: 8px; align-items: center; border: 1.5px solid var(--borde-fuerte); background: var(--panel); border-radius: 12px; padding: 10px 14px; cursor: pointer; font-size: 15px; font-weight: 600; color: var(--texto); margin: 0; }
+    .modos label:hover { background: var(--panel-2); }
+    .modos label.on { border-color: var(--acento); background: var(--acento-suave); color: var(--acento-h); }
+    .vista { font-size: 22px; font-weight: 800; margin: 12px 0; }
+    .alerta, .ok-caja { margin: 12px 0; font-weight: 600; }
     .herr-bajo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
-    .nivel { font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; color: #fff; }
-    .nivel.negativo { background: #7c3aed; } .nivel.agotado { background: var(--error); } .nivel.bajo { background: var(--aviso); }
-    @media print { .barra, .tabs, .no-print, #alerta, .herr-bajo button { display: none !important; } body { background: #fff; color: #000; overflow: visible; } table.cat { background: #fff; } }
-    .pie { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 10px; color: var(--suave); }
+    @media print { .barra, .tabs, .no-print, #alerta, .herr-bajo button { display: none !important; } body { background: #fff; color: #000; overflow: visible; } table.cat { box-shadow: none; } }
   </style>
 </head>
 <body>

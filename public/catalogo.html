@@ -4,27 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Catálogo · Zenit POS</title>
+  <meta name="color-scheme" content="light">
+  <link rel="stylesheet" href="/pwa/lib/tema.css">
+  <link rel="stylesheet" href="/pwa/lib/componentes.css">
   <link rel="stylesheet" href="/css/styles.css">
   <style>
     body { overflow: auto; }
-    .pagina { max-width: 1100px; margin: 0 auto; padding: 16px; width: 100%; }
-    .tabs { display: flex; gap: 8px; margin: 12px 0; }
-    .tabs button { flex: none; }
-    .herr { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
-    .herr input[type=search] { flex: 1; min-width: 200px; font-size: 16px; padding: 8px 10px; border: 2px solid var(--borde); border-radius: 8px; background: var(--panel); color: var(--texto); }
-    table.cat { background: var(--panel); border-radius: 10px; overflow: hidden; }
-    table.cat td, table.cat th { font-size: 15px; }
-    tr.inactivo td { opacity: .5; }
-    .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: middle; margin-right: 6px; }
-    dialog { border: 0; border-radius: 14px; padding: 20px; width: min(560px, 94vw); background: var(--panel); color: var(--texto); }
-    dialog::backdrop { background: rgba(2,6,23,.6); }
-    .rejilla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
-    .rejilla .ancho { grid-column: 1 / -1; }
-    .rejilla label { font-size: 13px; color: var(--suave); display: block; margin-bottom: 3px; }
-    .rejilla input, .rejilla select { width: 100%; font-size: 16px; padding: 8px 10px; border: 2px solid var(--borde); border-radius: 8px; background: var(--fondo); color: var(--texto); }
-    .rejilla input[type=checkbox] { width: auto; }
-    .err { color: var(--error); font-weight: 600; min-height: 1.4em; }
-    .btn.peq { padding: 4px 10px; font-size: 13px; }
   </style>
 </head>
 <body>

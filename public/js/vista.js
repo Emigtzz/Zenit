@@ -27,6 +27,8 @@ export function pintarTicket() {
   $('fila-desc').hidden = !venta.mayoreo;
   $('t-pct').textContent = `${venta.pctMayoreo}%`;
   $('t-desc').textContent = '-' + formatear(t.descuento);
+  const cobrar = $('btn-cobrar');
+  if (cobrar) { cobrar.disabled = venta.lineas.length === 0; $('cobrar-monto').textContent = venta.lineas.length ? formatear(t.total) : ''; }
 }
 
 let temporizador;

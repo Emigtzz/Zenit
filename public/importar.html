@@ -4,36 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Importar facturas · Zenit POS</title>
+  <meta name="color-scheme" content="light">
+  <link rel="stylesheet" href="/pwa/lib/tema.css">
+  <link rel="stylesheet" href="/pwa/lib/componentes.css">
   <link rel="stylesheet" href="/css/styles.css">
   <style>
     body { overflow: auto; }
-    .pagina { max-width: 1250px; margin: 0 auto; padding: 16px; width: 100%; }
-    .tabs { display: flex; gap: 8px; margin: 12px 0; }
-    .tarjeta { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
-    .drop { border: 3px dashed var(--borde); border-radius: 14px; padding: 28px; text-align: center; color: var(--suave); cursor: pointer; }
-    .drop.sobre, .drop:focus { border-color: var(--acento); color: var(--texto); outline: none; background: var(--sel); }
-    .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 14px; align-items: end; }
-    .rejilla label, .campo-l { font-size: 13px; color: var(--suave); display: block; margin-bottom: 3px; }
-    .rejilla input[type=text], .rejilla input[type=date], .rejilla select { width: 100%; font-size: 15px; padding: 7px 9px; border: 2px solid var(--borde); border-radius: 8px; background: var(--fondo); color: var(--texto); font-family: inherit; }
-    .ancho { grid-column: 1 / -1; }
-    .check { display: flex; gap: 8px; align-items: center; font-size: 15px; color: var(--texto) !important; }
-    table.cat { background: var(--panel); border-radius: 10px; width: 100%; } table.cat td, table.cat th { font-size: 13px; vertical-align: top; padding: 8px; }
-    table.cat input[type=text] { width: 84px; text-align: right; font-size: 14px; padding: 5px 7px; border: 2px solid var(--borde); border-radius: 7px; background: var(--fondo); color: var(--texto); }
+    .pagina { max-width: 1250px; }
+    .drop { border: 2px dashed var(--borde-campo); border-radius: var(--r-card); padding: 30px; text-align: center; color: var(--suave); cursor: pointer; background: var(--panel-2); transition: background-color .12s, border-color .12s; }
+    .drop:hover { border-color: var(--acento); background: var(--acento-suave); }
+    .drop.sobre, .drop:focus { border-color: var(--acento); color: var(--texto); outline: none; background: var(--acento-suave); box-shadow: 0 0 0 4px var(--foco); }
+    table.cat th, table.cat td { padding: 9px 10px; }
+    table.cat td { vertical-align: top; font-size: 14px; }
+    table.cat input[type=text] { width: 88px; text-align: right; font-size: 15px; padding: 4px 8px; min-height: 34px; }
     tr.ignorada td { opacity: .4; }
     tr.mal td:first-child { box-shadow: inset 4px 0 0 var(--error); }
-    .sub { color: var(--suave); font-size: 12px; }
-    .adv { background: var(--aviso); color: #fff; border-radius: 10px; padding: 8px 12px; margin-bottom: 8px; font-size: 14px; }
-    .adv.bloqueo { background: var(--error); }
-    .ok-caja { background: var(--ok); color: #fff; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-weight: 600; }
-    .etq { display: inline-block; font-size: 12px; padding: 1px 9px; border-radius: 999px; background: var(--borde); }
-    .etq.ia { background: #7c3aed; color: #fff; } .etq.xml { background: var(--ok); color: #fff; } .etq.pend { background: var(--aviso); color: #fff; }
-    .cand { margin: 2px 4px 2px 0; padding: 2px 9px; font-size: 12px; border-radius: 999px; border: 1px dashed var(--acento); background: transparent; color: var(--texto); cursor: pointer; }
-    .total-linea { font-size: 20px; font-weight: 800; text-align: right; }
-    .err { color: var(--error); font-weight: 600; min-height: 1.4em; }
+    .cand { margin: 3px 4px 3px 0; padding: 3px 11px; font-size: 12.5px; font-weight: 550; border-radius: var(--r-pill); border: 1px solid var(--acento-borde); background: var(--acento-suave); color: var(--acento-h); cursor: pointer; }
+    .cand:hover { background: var(--acento-borde); }
+    .total-linea { font-size: 21px; font-weight: 800; text-align: right; }
     .aviso-linea { color: var(--aviso); font-size: 12px; font-weight: 600; }
-    .btn.peq { padding: 4px 10px; font-size: 13px; }
     .pick-celda { min-width: 230px; }
-    .cargando { text-align: center; padding: 18px; font-weight: 600; }
+    .cargando { text-align: center; padding: 18px; font-weight: 600; color: var(--suave); }
   </style>
 </head>
 <body>

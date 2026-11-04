@@ -50,7 +50,7 @@ $('form-ajuste').addEventListener('submit', async (e) => {
   $('btn-ajuste').disabled = true; // evita doble clic
   try {
     const r = await api.ajustar({ producto_id: producto.id, modo, cantidad, motivo: $('a-motivo').value, nota: $('a-nota').value });
-    $('alerta').hidden = false; $('alerta').style.background = 'var(--ok)';
+    $('alerta').hidden = false; $('alerta').className = 'ok-caja';
     $('alerta').textContent = `✔ ${r.nombre}: ${r.stock_anterior} → ${r.stock_nuevo} (${r.diferencia > 0 ? '+' : ''}${r.diferencia})`;
     setTimeout(() => ($('alerta').hidden = true), 5000);
     selAjuste.limpiar();
@@ -87,7 +87,7 @@ $('k-sig').onclick = () => { pagina++; consultar(); };
 async function verificar() {
   const r = await api.verificarInventario().catch(() => null);
   if (r && !r.consistente) {
-    $('alerta').hidden = false; $('alerta').style.background = 'var(--aviso)';
+    $('alerta').hidden = false; $('alerta').className = 'alerta';
     $('alerta').textContent = `⚠ ${r.productos.length} producto(s) con stock distinto a su kárdex (ej.: ${r.productos[0].nombre}: sistema ${r.productos[0].stock}, kárdex ${r.productos[0].esperado}). Haz un conteo físico para corregirlo.`;
   }
 }

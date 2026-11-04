@@ -1,22 +1,17 @@
 /* Gráficas compartidas (caja y app del dueño). Colores = roles; claro/oscuro se cambia en UN lugar. Paleta validada con validate_palette.js */
 :root {
-  --viz-serie: #2a78d6;      /* serie 1 (azul) */
-  --viz-contexto: #898781;   /* lo que NO es el foco: gris */
-  --viz-grid: #e1e0d9; --viz-base: #c3c2b7;
-  --viz-t1: #0b0b0b; --viz-t2: #52514e; --viz-t3: #898781;
-  --viz-sup: #fcfcfb; --viz-borde: rgba(11,11,11,.10);
-  --viz-bien: #006300; --viz-mal: #d03b3b; --viz-aviso: #fab219;
+  /* Las gráficas usan los colores del tema (tema.css). La serie es el azul principal, validado con validate_palette.js sobre
+     fondo blanco (luminosidad, saturación y contraste ≥ 3:1). Lo que NO es el foco va en gris cálido. */
+  --viz-serie: var(--acento);
+  --viz-contexto: #bdb7aa;
+  --viz-grid: #eceae2; --viz-base: #d6d1c4;
+  --viz-t1: var(--texto); --viz-t2: var(--suave); --viz-t3: var(--tenue);
+  --viz-sup: var(--panel); --viz-borde: var(--borde);
+  --viz-bien: var(--ok); --viz-mal: var(--error); --viz-aviso: var(--aviso-punto);
 }
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
-    --viz-serie: #3987e5; --viz-grid: #2c2c2a; --viz-base: #383835; --viz-t1: #f0efec; --viz-t2: #c3c2b7; --viz-sup: #1a1a19;
-    --viz-borde: rgba(255,255,255,.10); --viz-bien: #0ca30c;
-  }
-}
-:root[data-theme="dark"] { --viz-serie: #3987e5; --viz-grid: #2c2c2a; --viz-base: #383835; --viz-t1: #f0efec; --viz-t2: #c3c2b7; --viz-sup: #1a1a19; --viz-borde: rgba(255,255,255,.10); --viz-bien: #0ca30c; }
 
-.viz-tarjeta { background: var(--viz-sup); border: 1px solid var(--viz-borde); border-radius: 12px; padding: 16px; color: var(--viz-t1); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
-.viz-tarjeta h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.viz-tarjeta { background: var(--viz-sup); border: 1px solid var(--viz-borde); border-radius: var(--r-card); padding: 18px; color: var(--viz-t1); font-family: var(--fuente); box-shadow: var(--sombra-1); }
+.viz-tarjeta h3 { margin: 0; font-size: 15px; font-weight: 650; text-transform: none; letter-spacing: 0; color: var(--viz-t1); }
 .viz-nota { margin: 2px 0 10px; font-size: 12px; color: var(--viz-t2); }
 .viz-zona { position: relative; min-height: 40px; transition: opacity .15s; }
 .viz-zona.cargando { opacity: .5; }
@@ -29,7 +24,7 @@
 .viz-svg .viz-grid { stroke: var(--viz-grid); stroke-width: 1; }
 .viz-svg .viz-base { stroke: var(--viz-base); stroke-width: 1; }
 .viz-svg .viz-barra { fill: var(--viz-serie); transition: opacity .1s; }
-.viz-svg .viz-barra.contexto { fill: var(--viz-contexto); opacity: .55; }
+.viz-svg .viz-barra.contexto { fill: var(--viz-contexto); }
 .viz-svg .viz-hit { fill: transparent; cursor: default; outline: none; }
 .viz-svg .viz-hit:hover + .viz-barra, .viz-svg .viz-hit:focus + .viz-barra { opacity: 1; filter: brightness(1.12); }
 .viz-svg .viz-hit:focus-visible { stroke: var(--viz-t2); stroke-width: 1; }
@@ -43,7 +38,7 @@
 .viz-fila .barra { flex: none; height: 12px; width: max(2px, calc((100% - 84px) * var(--p, 0))); background: var(--viz-serie); border-radius: 0 4px 4px 0; }
 .viz-fila .cifra { flex: none; padding-left: 6px; font-size: 12px; font-weight: 600; color: var(--viz-t1); white-space: nowrap; }
 
-.viz-tip { position: absolute; z-index: 20; pointer-events: none; background: var(--viz-sup); color: var(--viz-t1); border: 1px solid var(--viz-borde); border-radius: 8px; padding: 6px 10px; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.18); white-space: nowrap; transform: translate(-50%, -100%); }
+.viz-tip { position: absolute; z-index: 20; pointer-events: none; background: var(--viz-sup); color: var(--viz-t1); border: 1px solid var(--viz-borde); border-radius: 8px; padding: 6px 10px; font-size: 12px; box-shadow: var(--sombra-2); white-space: nowrap; transform: translate(-50%, -100%); }
 .viz-tip b { display: block; font-size: 14px; }
 .viz-tip span { color: var(--viz-t2); }
 

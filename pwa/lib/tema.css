@@ -1,0 +1,33 @@
+/* =====================================================================================================================
+   TEMA · el ÚNICO lugar donde viven los colores y medidas de Zenit POS (caja y app del celular). Solo modo claro, a propósito:
+   una pantalla que se mira todo el día cansa menos con fondo suave y texto no-negro. Para cambiar el aspecto, edita aquí.
+   Todos los pares texto/fondo se verificaron con contraste WCAG (texto normal ≥ 4.5:1; el principal, ≥ 7:1).
+   ===================================================================================================================== */
+:root {
+  color-scheme: light;                      /* el sistema operativo en modo oscuro NO cambia estos colores */
+
+  /* Superficies (papel crema + tarjetas blancas) */
+  --fondo: #f4f2ee;  --panel: #ffffff;  --panel-2: #faf9f6;
+  --borde: #e5e1d8;  --borde-fuerte: #d6d1c4;  --borde-campo: #918b7c;
+
+  /* Texto */
+  --texto: #25303b;  --suave: #5b6573;  --tenue: #626b78;
+
+  /* Color principal: azul sereno (el mismo de las gráficas) */
+  --acento: #256abf;  --acento-h: #1c5cab;  --acento-p: #184f95;
+  --acento-suave: #e8f0fb;  --acento-borde: #cddff6;  --sel: #e8f0fb;  --acento-t: #ffffff;
+  --foco: rgba(37, 106, 191, .38);
+
+  /* Estados: texto/relleno sólido + versión suave para avisos (letra oscura sobre fondo claro: se lee sin cansar) */
+  --ok: #1d6b3f;      --ok-suave: #e8f5ec;      --ok-borde: #bfe3cb;
+  --aviso: #8a5300;   --aviso-suave: #fff4dc;   --aviso-borde: #f1d79a;   --aviso-punto: #d68a00;
+  --error: #b3261e;   --error-suave: #fdeceb;   --error-borde: #f3c1be;
+  --violeta: #6b4fb8; --violeta-suave: #f0ecfa;
+
+  /* Forma */
+  --r-ctl: 10px;  --r-card: 14px;  --r-pill: 999px;
+  --sombra-1: 0 1px 2px rgba(37, 48, 59, .06);
+  --sombra-2: 0 1px 2px rgba(37, 48, 59, .05), 0 6px 18px rgba(37, 48, 59, .07);
+  --sombra-3: 0 12px 40px rgba(37, 48, 59, .22);
+  --fuente: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}

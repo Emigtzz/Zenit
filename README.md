@@ -209,6 +209,12 @@ Un producto con `stock_minimo = 0` se considera "sin mínimo definido" y no gene
 
 Todo ajuste exige un **motivo** (conteo físico, merma, caducado, dañado, robo o extravío, devolución a proveedor, error de captura, otro). Con "Otro" la nota es obligatoria. El kárdex muestra el **saldo acumulado** tras cada movimiento y se filtra por producto, tipo y fechas. La pantalla avisa si el stock de algún producto no coincide con la suma de su kárdex (`GET /api/inventario/verificar`).
 
+## Apariencia (colores y botones)
+
+La app es siempre en **modo claro** (aunque Windows esté en modo oscuro). Todos los colores y medidas viven en un solo archivo: `pwa/lib/tema.css`. Para cambiar el color principal de botones y gráficas, edita `--acento` (y sus variantes `--acento-h`, `--acento-p`, `--acento-suave`). Los estilos de botones, campos y avisos están en `pwa/lib/componentes.css`. Si cambias el azul por otro color, cuida que el texto blanco sobre el botón siga siendo legible (contraste mínimo 4.5:1).
+
+Si cambias algo en `pwa/`, sube el número de `VERSION` en `pwa/sw.js` para que el celular del dueño descargue la versión nueva.
+
 ## Probar sin hardware
 
 | Hardware | Cómo se simula |
